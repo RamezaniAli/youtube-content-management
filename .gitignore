@@ -177,10 +177,7 @@ cython_debug/
 docker-volumes/
 
 # Data
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
+data/extracted_video_data/
 
 # IDEs
 .vscode/

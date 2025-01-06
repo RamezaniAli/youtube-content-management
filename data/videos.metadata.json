@@ -1,1 +1,0 @@
-{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"expire_at":{"$numberInt":"1"}},"name":"expire_at_1","expireAfterSeconds":{"$numberInt":"0"}}],"uuid":"598f8cbb07f64a47a23dd01792380310","collectionName":"videos","type":"collection"}

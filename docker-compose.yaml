@@ -288,10 +288,12 @@ services:
     image: mongo:5.0.31-rc0-nanoserver-ltsc2022
     container_name: mongodb
     ports:
-      - 27017:27017
+      - "27017:27017"
     restart: always
     volumes:
       - mongo-volume:/data/db
+      - ./scripts/mongo_init.sh:/docker-entrypoint-initdb.d/mongo_init.sh
+      - ./data/extracted_video_data:/dump
 
     
   postgres:
