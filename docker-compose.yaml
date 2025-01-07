@@ -285,7 +285,7 @@ services:
         condition: service_completed_successfully
 
   mongodb:
-    image: mongo:latest
+    image: mongo:4.4.6
     container_name: mongodb
     ports:
       - "27017:27017"
