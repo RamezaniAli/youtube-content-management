@@ -285,7 +285,7 @@ services:
         condition: service_completed_successfully
 
   mongodb:
-    image: mongo:5.0.31-rc0-nanoserver-ltsc2022
+    image: mongo:latest
     container_name: mongodb
     ports:
       - "27017:27017"
