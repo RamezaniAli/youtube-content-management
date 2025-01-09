@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS bronze;
 
-CREATE TABLE IF NOT EXISTS bronze.employee
+CREATE TABLE IF NOT EXISTS bronze.channels
 (
     id UInt64,  
     username String,  
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS bronze.employee
 ENGINE = MergeTree()
 ORDER BY id;  
 
-CREATE TABLE IF NOT EXISTS bronze.video
+CREATE TABLE IF NOT EXISTS bronze.videos
 (
     "owner_username" String,
     "owner_id" String,
@@ -49,3 +49,6 @@ CREATE TABLE IF NOT EXISTS bronze.video
     "is_produce_to_kafka" UInt8,
     "update_count" UInt32
 )
+ENGINE = MergeTree()
+PRIMARY KEY (id, created_at)       
+ORDER BY (created_at);
