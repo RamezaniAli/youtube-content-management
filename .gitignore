@@ -178,6 +178,8 @@ docker-volumes/
 
 # Data
 data/extracted_video_data/
+data/extracted_channels_export.csv
+
 
 # IDEs
 .vscode/
