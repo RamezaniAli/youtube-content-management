@@ -5,6 +5,7 @@ until mongo --eval 'db.runCommand({ ping: 1 })' &>/dev/null; do
   sleep 1
 done
 
+
 MONGO_USERNAME="${MONGO_INITDB_ROOT_USERNAME}"
 MONGO_PASSWORD="${MONGO_INITDB_ROOT_PASSWORD}"
 AUTH_STRING=""

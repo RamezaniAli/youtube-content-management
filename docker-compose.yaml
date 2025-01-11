@@ -287,7 +287,6 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
-
   mongodb:
     image: mongo:4.4.6
     container_name: mongodb
@@ -301,7 +300,6 @@ services:
       - mongo-volume:/data/db
       - ./scripts/mongo_init.sh:/docker-entrypoint-initdb.d/mongo_init.sh
       - ./data/extracted_video_data:/dump
-    
 
     
   postgres:
@@ -317,6 +315,7 @@ services:
     volumes:
       - postgres-volume:/var/lib/postgresql/data
       - ./data/extracted_channels_export.csv:/dump/extracted_channels_export.csv
+      # - ./data/samples/channels_export_sample.csv:/dump/extracted_channels_export.csv
       - ./scripts/create_postgres_tables.sql:/docker-entrypoint-initdb.d/create_postgres_tables.sql
       - ./scripts/postgres_init.sh:/docker-entrypoint-initdb.d/postgres_init.sh
 
