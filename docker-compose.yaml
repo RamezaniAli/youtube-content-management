@@ -299,7 +299,7 @@ services:
       - mongo-volume:/data/db
       - ./scripts/mongo_init.sh:/docker-entrypoint-initdb.d/mongo_init.sh:ro
       - ./data/extracted_video_data:/backup:ro
-       command: ["--auth"]
+    command: ["--auth"]
 
     
   postgres:
