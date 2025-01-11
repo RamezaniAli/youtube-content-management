@@ -1,15 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "=== Starting MongoDB data restoration process ==="
+until mongo --eval 'db.runCommand({ ping: 1 })' &>/dev/null; do
+  sleep 1
+done
 
-COLLECTIONS_COUNT=$(mongo youtube --quiet --eval "db.getCollectionNames().length")
+MONGO_USERNAME="${MONGO_INITDB_ROOT_USERNAME}"
+MONGO_PASSWORD="${MONGO_INITDB_ROOT_PASSWORD}"
+AUTH_STRING=""
 
-if [ "$COLLECTIONS_COUNT" -eq 0 ]; then
-    echo "Database is empty. Starting data restoration..."
-    # Restore data using mongorestore
-    mongorestore --db youtube --verbose /dump
-    echo "=== MongoDB data restoration completed ==="
-else
-    echo "Database already contains data. Skipping restoration."
+if [ -n "$MONGO_USERNAME" ] && [ -n "$MONGO_PASSWORD" ]; then
+  AUTH_STRING="--username $MONGO_USERNAME --password $MONGO_PASSWORD --authenticationDatabase admin"
 fi
+
+mongorestore $AUTH_STRING --drop --dir /dump --numInsertionWorkersPerCollection=5
+
+echo "Done!"
