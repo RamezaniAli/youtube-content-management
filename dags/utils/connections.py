@@ -1,6 +1,6 @@
 import os
 import psycopg2
-import pymongo
+from pymongo import MongoClient
 import logging
 from clickhouse_driver import Client
 
@@ -32,14 +32,27 @@ class Postgres:
             result = pg_cursor.fetchall()
         logging.info("Query Executed")
         return result
+    
+    def alter(self, path: str = './scripts/alter_postgres.sql'):
+        with open('./scripts/alter_postgres.sql', 'r') as f:
+            ddl = f.read()
+        
+        self.pg_conn.execute(ddl)
+        logging.info("Alter Postgres Table")
+
+        
 
 
 class Mongo:
     def __init__(self):
         self.host = os.getenv('MONGO_HOST', 'mongodb')
+        self.username = os.getenv('MONGO_USERNAME', 'utube')
+        self.password = os.getenv('MONGO_PASSWORD', 'utube')
+        self.db = os.getenv('MONGO_DB', 'utube')
+        self.auth_db = os.getenv('MONGO_AUTH_DB', 'admin')
     
     def connect(self):
-        client = pymongo.MongoClient(self.host, 27017)
+        client = MongoClient(f"mongodb://{self.username}:{self.password}@{self.host}/?authSource={self.auth_db}")
         logging.info("Connected to MongoDB")
         return client
     

@@ -4,26 +4,27 @@ CREATE DATABASE IF NOT EXISTS bronze;
 -- Create the channels table if it doesn't exist
 CREATE TABLE IF NOT EXISTS bronze.channels
 (
-    id UInt64,  
+    id String,  
     username String,  
     userid String,  
     avatar_thumbnail String, 
-    is_official UInt8,  
+    is_official Bool, 
     name String,  
-    bio_links String, 
-    total_video_visit UInt64,
-    video_count UInt32,  
+    bio_links String,  
+    total_video_visit Int64,  
+    video_count Int32,  
     start_date Date,  
-    start_date_timestamp UInt64,  
-    followers_count UInt64, 
-    following_count UInt64,  
+    start_date_timestamp Int64,  
+    followers_count Int64,  
+    following_count Int64, 
     country String, 
-    platform String,  
-    created_at DateTime,  
-    update_count UInt32 
+    platform String, 
+    created_at DateTime('UTC'),  
+    update_count Int32  
 )
 ENGINE = MergeTree()
 ORDER BY id;
+
 
 -- Create the videos table if it doesn't exist
 CREATE TABLE IF NOT EXISTS bronze.videos
