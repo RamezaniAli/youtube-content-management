@@ -16,5 +16,5 @@ This project implements a data pipeline for managing YouTube content using:
 ## Setup Instructions
 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/youtube-content-management.git
+git clone https://github.com/ramezaniali/youtube-content-management.git
 cd youtube-content-management
