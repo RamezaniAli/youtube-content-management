@@ -72,8 +72,10 @@ x-airflow-common:
     # The following line can be used to set a custom config file, stored in the local config folder
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/scripts:/opt/airflow/scripts
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
@@ -118,6 +120,7 @@ services:
   airflow-webserver:
     <<: *airflow-common
     command: webserver
+    env_file: "./.env"
     ports:
       - "8080:8080"
     healthcheck:
@@ -320,6 +323,7 @@ services:
       - mongodb
       - postgres
     restart: always
+    privileged: true
     volumes:
       - clickhouse-data-volume:/var/lib/clickhouse/
       - clickhouse-log-volume:/var/log/clickhouse-server/
@@ -331,12 +335,12 @@ services:
 
 volumes:
   postgres-airflow-volume:
-    external: true
+    # external: true
   mongo-volume:
-    external: true
+    # external: true
   postgres-volume:
-    external: true
+    # external: true
   clickhouse-data-volume:
-    external: true
+    # external: true
   clickhouse-log-volume:
-    external: true
+    # external: true

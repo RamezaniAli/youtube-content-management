@@ -3,10 +3,9 @@ from airflow import DAG
 import datetime
 from airflow.decorators import task
 from dotenv import load_dotenv
-from dags.utils.bronze_database import BronzeIntegration
+from utils.bronze_database import BronzeIntegration
 
 load_dotenv()
-
 
 default_args = {
     "owner": "Quera Team",
@@ -19,19 +18,18 @@ bronze_integration = BronzeIntegration()
 
 with DAG(dag_id='Bronze_layer_dag', max_active_runs=5, default_args=default_args, schedule_interval=None) as dag:
 
-    @task(queue="bronze_layer_queue")
-    def create_clickhouse_schema(**kwargs):
+    @task
+    def create_clickhouse_schema():
         bronze_integration.create_clickhouse_schema()
 
-    @task(queue="bronze_layer_queue")
-    def read_from_postgres(**kwargs):
+    @task
+    def read_from_postgres():
         bronze_integration.read_from_postgres()
 
-    @task(queue="bronze_layer_queue")
-    def read_from_mongodb(**kwargs):
+    @task
+    def read_from_mongodb():
         bronze_integration.read_from_mongo()
     
-
     schema_task = create_clickhouse_schema()
     postgres_task = read_from_postgres()
     mongo_task = read_from_mongodb()

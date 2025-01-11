@@ -1,5 +1,7 @@
+-- Create the database if it doesn't exist
 CREATE DATABASE IF NOT EXISTS bronze;
 
+-- Create the channels table if it doesn't exist
 CREATE TABLE IF NOT EXISTS bronze.channels
 (
     id UInt64,  
@@ -21,10 +23,12 @@ CREATE TABLE IF NOT EXISTS bronze.channels
     update_count UInt32 
 )
 ENGINE = MergeTree()
-ORDER BY id;  
+ORDER BY id;
 
+-- Create the videos table if it doesn't exist
 CREATE TABLE IF NOT EXISTS bronze.videos
 (
+    "id" UInt64,
     "owner_username" String,
     "owner_id" String,
     "title" String,
@@ -50,5 +54,5 @@ CREATE TABLE IF NOT EXISTS bronze.videos
     "update_count" UInt32
 )
 ENGINE = MergeTree()
-PRIMARY KEY (id, created_at)       
+PRIMARY KEY (created_at)       
 ORDER BY (created_at);

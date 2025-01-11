@@ -1,4 +1,4 @@
-from dags.utils.connections import Postgres, Mongo, ClickHouse
+from utils.connections import Postgres, Mongo, ClickHouse
 import logging
 
 class BronzeIntegration:
@@ -15,18 +15,19 @@ class BronzeIntegration:
         OFFSET = 0
 
         while True:
-            rows = pg_conn.execute(f'SELECT * FROM channel LIMIT {BATCH_SIZE} OFFSET {OFFSET}').fetchall()
+            query = f'SELECT * FROM channels LIMIT {BATCH_SIZE} OFFSET {OFFSET}'
+            rows = self.postgres.execute(query)
             logging.info("Reading data from Postgres from offset %s", OFFSET)
             if not rows:
                 break
             click_conn.execute(
-                'INSERT INTO bronze.channel VALUES', rows
+                'INSERT INTO bronze.channels VALUES', rows
             )
             logging.info("Inserted data to ClickHouse from offset %s", OFFSET)
 
             OFFSET += BATCH_SIZE
         logging.info("Finished reading data from Postgres")
-        pg_conn.close()
+        self.postgres.close()
 
     def read_from_mongo(self):
         mongo_conn = self.mongo.connect()
@@ -53,7 +54,7 @@ class BronzeIntegration:
             
             logging.info("Inserting data to ClickHouse")
             click_conn.execute(
-                'INSERT INTO bronze.video VALUES', data
+                'INSERT INTO bronze.videos VALUES', data
             )
 
         logging.info("Finished reading data from MongoDB")
