@@ -75,6 +75,7 @@ x-airflow-common:
 
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/scripts:/opt/airflow/scripts
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
@@ -119,6 +120,7 @@ services:
   airflow-webserver:
     <<: *airflow-common
     command: webserver
+    env_file: "./.env"
     ports:
       - "8080:8080"
     healthcheck:
@@ -292,14 +294,12 @@ services:
       - "27017:27017"
     restart: always
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=utube
-      - MONGO_INITDB_ROOT_PASSWORD=utube
-      - MONGO_INITDB_DATABASE=utube
+      MONGO_INITDB_ROOT_USERNAME: utube
+      MONGO_INITDB_ROOT_PASSWORD: utube
     volumes:
       - mongo-volume:/data/db
-      - ./scripts/mongo_init.sh:/docker-entrypoint-initdb.d/mongo_init.sh:ro
-      - ./data/extracted_video_data:/backup:ro
-    command: ["--auth"]
+      - ./scripts/mongo_init.sh:/docker-entrypoint-initdb.d/mongo_init.sh
+      - ./data/extracted_video_data:/dump
 
     
   postgres:
@@ -315,6 +315,7 @@ services:
     volumes:
       - postgres-volume:/var/lib/postgresql/data
       - ./data/extracted_channels_export.csv:/dump/extracted_channels_export.csv
+      # - ./data/samples/channels_export_sample.csv:/dump/extracted_channels_export.csv
       - ./scripts/create_postgres_tables.sql:/docker-entrypoint-initdb.d/create_postgres_tables.sql
       - ./scripts/postgres_init.sh:/docker-entrypoint-initdb.d/postgres_init.sh
 
@@ -326,6 +327,7 @@ services:
       - mongodb
       - postgres
     restart: always
+    privileged: true
     volumes:
       - clickhouse-data-volume:/var/lib/clickhouse/
       - clickhouse-log-volume:/var/log/clickhouse-server/
@@ -337,12 +339,12 @@ services:
 
 volumes:
   postgres-airflow-volume:
-    external: true
+    # external: true
   mongo-volume:
-    external: true
+    # external: true
   postgres-volume:
-    external: true
+    # external: true
   clickhouse-data-volume:
-    external: true
+    # external: true
   clickhouse-log-volume:
-    external: true
+    # external: true
