@@ -3,5 +3,3 @@ clickclick==20.10.2
 clickhouse-driver==0.2.9
 psycopg2-binary==2.9.10
 pymongo==4.10.1
-
-
