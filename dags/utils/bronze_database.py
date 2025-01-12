@@ -7,7 +7,7 @@ class BronzeIntegration:
         self.postgres = Postgres()
         self.mongo = Mongo()
         self.clickhouse = ClickHouse()
-    
+
     def read_from_postgres(self):
         pg_conn = self.postgres.connect()
         click_conn = self.clickhouse.connect()
@@ -43,7 +43,7 @@ class BronzeIntegration:
             rows = self.postgres.execute(formatted_query)
             logging.info("Reading data from Postgres from offset %s", OFFSET)
             logging.info("row:{}".format(rows))
-            
+
             if not rows:
                 break
 
@@ -85,15 +85,34 @@ class BronzeIntegration:
                 }
 
                 for field in ("_", "platform"):
-                    data.pop(field, None)
+                    data['object'].pop(field, None)
 
                 record = (
                     data["id"],
-                    data["object"],
+                    data["object"]["owner_username"],
+                    data["object"]["owner_id"],
+                    data["object"]["title"],
+                    data["object"]["tags"],
+                    data["object"]["uid"],
+                    data["object"]["visit_count"],
+                    data["object"]["owner_name"],
+                    data["object"]["poster"],
+                    data["object"]["owener_avatar"],
+                    data["object"]["duration"],
+                    data["object"]["posted_date"],
+                    data["object"]["posted_timestamp"],
+                    data["object"]["sdate_rss"],
+                    data["object"]["sdate_rss_tp"],
+                    data["object"]["comments"],
+                    data["object"]["frame"],
+                    data["object"]["like_count"],
+                    data["object"]["description"],
+                    data["object"]["is_deleted"],
                     data["created_at"],
                     data["expire_at"],
                     data["is_produce_to_kafka"],
                     data["update_count"],
+                    data["object"]
                 )
                 batch.append(record)
 
@@ -113,7 +132,6 @@ class BronzeIntegration:
         finally:
             mongo_conn.close()
             logging.info("MongoDB connection closed")
-
 
     def create_clickhouse_schema(self):
         self.clickhouse.connect()
