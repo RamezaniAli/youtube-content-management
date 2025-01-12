@@ -42,7 +42,7 @@ def extract_from_postgres(batch_size=1000):
 
 
 def extract_from_mongo(batch_size=1000):
-    mongo_hook = MongoHook(conn_id='oltp_mongo_conn')
+    mongo_hook = MongoHook('oltp_mongo_conn')
     mongo_client = mongo_hook.get_conn()
 
     try:
