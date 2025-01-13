@@ -16,28 +16,15 @@ def get_dynamic_batch_size(max_batch_size=1000):
     return max_batch_size
 
 
-def extract_from_postgres(batch_size=1000):
-    postgres_hook = PostgresHook('oltp_postgres_conn')
-    conn = postgres_hook.get_conn()
-    cursor = conn.cursor()
-
+def extract_from_postgres(**kwargs):
     try:
-        offset = 0
-        while True:
-            query = "SELECT * FROM channels LIMIT %s OFFSET %s;"
-            cursor.execute(query, (batch_size, offset))
-            records = cursor.fetchall()
-
-            if not records:
-                break
-
-            yield records
-            offset += batch_size
+        conn_id = kwargs['conn_id']
+        hook = PostgresHook(postgres_conn_id=conn_id)
+        sql_query = "SELECT * FROM channels;"
+        records = hook.get_records(sql_query)
+        kwargs['ti'].xcom_push(key='postgres_data', value=records)
     except Exception as e:
         print(f"An error occurred: {e}")
-    finally:
-        cursor.close()
-        conn.close()
 
 
 def extract_from_mongo(batch_size=1000):
@@ -185,44 +172,42 @@ default_args = {
     "retry_delay": duration(minutes=3)
 }
 
-dag = DAG(
+with DAG(
         'etl_mongo_postgres_to_clickhouse',
         default_args=default_args,
-        description='ETL with Dynamic Batch Size',
         schedule_interval=None,
         start_date=datetime(2025, 1, 1),
         max_active_runs=1,
         catchup=False,
-)
+) as dag:
 
-extract_postgres = PythonOperator(
-    dag=dag,
-    task_id='extract_postgres',
-    python_callable=extract_from_postgres,
-    op_kwargs={'batch_size': get_dynamic_batch_size()},
-)
+    extract_postgres = PythonOperator(
+        dag=dag,
+        task_id='extract_postgres',
+        python_callable=extract_from_postgres,
+        provide_context=True,
+        op_kwargs={'conn_id': 'oltp_postgres_conn'}
+    )
 
-extract_mongo = PythonOperator(
-    dag=dag,
-    task_id='extract_mongo',
-    python_callable=extract_from_mongo,
-    op_kwargs={'batch_size': get_dynamic_batch_size()},
-)
-
-create_bronze_schema = PythonOperator(
-    dag=dag,
-    task_id='create_schema',
-    python_callable=create_bronze_schema
-)
-
-load_clickhouse = PythonOperator(
-    dag=dag,
-    task_id='load_clickhouse',
-    python_callable=load_to_clickhouse,
-    op_kwargs={
-        'postgres_batches': '{{ ti.xcom_pull(task_ids="extract_postgres") }}',
-        'mongo_batches': '{{ ti.xcom_pull(task_ids="extract_mongo") }}',
-    },
-)
-
-[extract_postgres, extract_mongo] >> create_bronze_schema >> load_clickhouse
+# extract_mongo = PythonOperator(
+#     dag=dag,
+#     task_id='extract_mongo',
+#     python_callable=extract_from_mongo,
+#     op_kwargs={'batch_size': get_dynamic_batch_size()},
+# )
+#
+# create_bronze_schema = PythonOperator(
+#     dag=dag,
+#     task_id='create_schema',
+#     python_callable=create_bronze_schema
+# )
+#
+# load_clickhouse = PythonOperator(
+#     dag=dag,
+#     task_id='load_clickhouse',
+#     python_callable=load_to_clickhouse,
+#     op_kwargs={
+#         'postgres_batches': '{{ ti.xcom_pull(task_ids="extract_postgres") }}',
+#         'mongo_batches': '{{ ti.xcom_pull(task_ids="extract_mongo") }}',
+#     },
+# )
