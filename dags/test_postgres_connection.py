@@ -10,8 +10,8 @@ def process_data(**kwargs):
     hook = PostgresHook(postgres_conn_id=conn_id)
     sql_query = "SELECT * FROM channels;"
     records = hook.get_records(sql_query)
-    record_count = len(records)
-    return record_count
+    kwargs['ti'].xcom_push(key='postgres_data', value=records)
+    return records
 
 
 # DAG and its tasks
