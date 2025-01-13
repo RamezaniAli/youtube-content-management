@@ -10,8 +10,10 @@ def process_data_from_mongo(**kwargs):
     hook = MongoHook(mongo_conn_id=conn_id)
     db = hook.get_conn()['utube']
     videos_collection = db['videos']
-    record_count = videos_collection.count_documents({})
-    return f"Number of documents in 'videos' collection: {record_count}"
+    # record_count = videos_collection.count_documents({})
+    records = videos_collection.find().limit(1000)
+    kwargs['ti'].xcom_push(key='mongo_data', value=records)
+    # return f"Number of documents in 'videos' collection: {record_count}"
 
 
 # DAG and its tasks
