@@ -8,9 +8,10 @@ from airflow.utils.dates import days_ago
 def process_data_from_mongo(**kwargs):
     conn_id = kwargs['conn_id']
     hook = MongoHook(mongo_conn_id=conn_id)
-    collection = hook.get_collection('utube', 'videos')
-    record_count = collection.count_documents({})
-    return record_count
+    db = hook.get_conn()['utube']
+    videos_collection = db['videos']
+    record_count = videos_collection.count_documents({})
+    return f"Number of documents in 'videos' collection: {record_count}"
 
 
 # DAG and its tasks
