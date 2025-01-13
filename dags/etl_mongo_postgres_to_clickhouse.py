@@ -17,14 +17,30 @@ def get_dynamic_batch_size(max_batch_size=1000):
 
 
 def extract_from_postgres(**kwargs):
-    try:
-        conn_id = kwargs['conn_id']
-        hook = PostgresHook(postgres_conn_id=conn_id)
-        sql_query = "SELECT * FROM channels;"
-        records = hook.get_records(sql_query)
-        kwargs['ti'].xcom_push(key='postgres_data', value=records)
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    pg_hook = PostgresHook('')
+    conn = pg_hook.get_conn()
+    cursor = conn.cursor()
+    batch_size = 1000
+    offset = 0
+    records = []
+
+    while True:
+        query = f"SELECT * FROM channels LIMIT {batch_size} OFFSET {offset}"
+        cursor.execute(query)
+
+        result = cursor.fetchall()
+
+        if not result:
+            break
+
+        records.extend(result)
+
+        offset += batch_size
+
+
+    kwargs['ti'].xcom_push(key='postgres_data', value=records)
+
+    cursor.close()
 
 
 def extract_from_mongo(batch_size=1000):
@@ -175,6 +191,7 @@ default_args = {
 with DAG(
         'etl_mongo_postgres_to_clickhouse',
         default_args=default_args,
+        description='ETL with Dynamic Batch Size',
         schedule_interval=None,
         start_date=datetime(2025, 1, 1),
         max_active_runs=1,
@@ -184,9 +201,7 @@ with DAG(
     extract_postgres = PythonOperator(
         dag=dag,
         task_id='extract_postgres',
-        python_callable=extract_from_postgres,
-        provide_context=True,
-        op_kwargs={'conn_id': 'oltp_postgres_conn'}
+        python_callable=extract_from_postgres
     )
 
 # extract_mongo = PythonOperator(
