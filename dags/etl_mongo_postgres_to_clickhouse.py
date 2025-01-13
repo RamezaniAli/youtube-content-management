@@ -8,7 +8,6 @@ from datetime import datetime
 
 from pendulum import duration
 
-CLICKHOUSE_CLIENT = get_client(host='localhost', port=8123)
 
 def get_dynamic_batch_size(max_batch_size=1000):
     memory_available = psutil.virtual_memory().available
@@ -96,7 +95,7 @@ def extract_from_mongo(batch_size=1000):
 
 def create_bronze_schema():
     try:
-        client = CLICKHOUSE_CLIENT
+        client = get_client(host='127.0.0.1', port=8123)
         client.command("CREATE DATABASE IF NOT EXISTS bronze")
 
         create_channels_table_query = """
@@ -119,7 +118,6 @@ def create_bronze_schema():
                 platform                LowCardinality(String), 
                 created_at              Nullable(DateTime('UTC')),  
                 update_count            Int32,
-                --these two added:
                 _source                 String DEFAULT 'postgres',
                 _ingestion_ts           DateTime DEFAULT now()
             )
@@ -170,7 +168,7 @@ def create_bronze_schema():
         print(f"An error occurred: {e}")
 
 def load_to_clickhouse(postgres_batches, mongo_batches):
-    client = CLICKHOUSE_CLIENT
+    client = get_client(host='127.0.0.1', port=8123)
 
     for batch in postgres_batches:
         client.insert('bronze.channels', batch)
