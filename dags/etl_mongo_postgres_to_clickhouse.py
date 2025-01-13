@@ -2,9 +2,9 @@ import psutil
 from airflow import DAG
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.mongo.hooks.mongo import MongoHook
+from airflow.utils.dates import days_ago
 from clickhouse_connect import get_client
 from airflow.operators.python import PythonOperator
-from datetime import datetime
 
 from pendulum import duration
 
@@ -16,84 +16,54 @@ def get_dynamic_batch_size(max_batch_size=1000):
     return max_batch_size
 
 
-def extract_from_postgres(**kwargs):
-    hook = PostgresHook('oltp_postgres_conn')
-    conn = hook.get_conn()
-    cursor = conn.cursor()
-    batch_size = 1000
-    offset = 0
-    records = []
-
-    while True:
-        query = f"SELECT * FROM channels LIMIT 1000"
-        cursor.execute(query)
-
-        result = cursor.fetchall()
-
-        if not result:
-            break
-
-        records.extend(result)
-
-        # offset += batch_size
-
-
+def process_data_from_postgres(**kwargs):
+    conn_id = kwargs['conn_id']
+    hook = PostgresHook(postgres_conn_id=conn_id)
+    sql_query = "SELECT * FROM channels limit 1000;"
+    records = hook.get_records(sql_query)
     kwargs['ti'].xcom_push(key='postgres_data', value=records)
 
-    cursor.close()
 
+def process_data_from_mongo(**kwargs):
+    conn_id = kwargs['conn_id']
+    hook = MongoHook(mongo_conn_id=conn_id)
+    db = hook.get_conn()['utube']
+    videos_collection = db['videos']
 
-def extract_from_mongo(batch_size=1000):
-    mongo_hook = MongoHook('oltp_mongo_conn')
-    mongo_client = mongo_hook.get_conn()
+    documents = list(videos_collection.find().limit(1000))
 
-    try:
-        db = mongo_client['utube']
-        collection = db['videos']
-        cursor = collection.find().batch_size(batch_size)
-        batch = []
+    data = []
+    for document in documents:
+        doc = {
+            "id": document["_id"],
+            "owner_username": document["object"].get("owner_username"),
+            "owner_id": document["object"].get("owner_id"),
+            "title": document["object"].get("title"),
+            "tags": document["object"].get("tags"),
+            "uid": document["object"].get("uid"),
+            "visit_count": document["object"].get("visit_count"),
+            "owner_name": document["object"].get("owner_name"),
+            "poster": document["object"].get("poster"),
+            "owener_avatar": document["object"].get("owener_avatar"),
+            "duration": document["object"].get("duration"),
+            "posted_date": document["object"].get("posted_date"),
+            "posted_timestamp": document["object"].get("posted_timestamp"),
+            "sdate_rss": document["object"].get("sdate_rss"),
+            "sdate_rss_tp": document["object"].get("sdate_rss_tp"),
+            "comments": document["object"].get("comments"),
+            "frame": document["object"].get("frame"),
+            "like_count": document["object"].get("like_count"),
+            "description": document["object"].get("description"),
+            "is_deleted": document["object"].get("is_deleted"),
+            "created_at": document.get("created_at"),
+            "expire_at": document.get("expire_at"),
+            "is_produce_to_kafka": document.get("is_produce_to_kafka", False),
+            "update_count": document.get("update_count", 0),
+            "object": document.get("object")
+        }
+        data.append(doc)
 
-        for document in cursor:
-            doc = {
-                "id": document["_id"],
-                "owner_username": document["object"].get("owner_username"),
-                "owner_id": document["object"].get("owner_id"),
-                "title": document["object"].get("title"),
-                "tags": document["object"].get("tags"),
-                "uid": document["object"].get("uid"),
-                "visit_count": document["object"].get("visit_count"),
-                "owner_name": document["object"].get("owner_name"),
-                "poster": document["object"].get("poster"),
-                "owener_avatar": document["object"].get("owener_avatar"),
-                "duration": document["object"].get("duration"),
-                "posted_date": document["object"].get("posted_date"),
-                "posted_timestamp": document["object"].get("posted_timestamp"),
-                "sdate_rss": document["object"].get("sdate_rss"),
-                "sdate_rss_tp": document["object"].get("sdate_rss_tp"),
-                "comments": document["object"].get("comments"),
-                "frame": document["object"].get("frame"),
-                "like_count": document["object"].get("like_count"),
-                "description": document["object"].get("description"),
-                "is_deleted": document["object"].get("is_deleted"),
-                "created_at": document.get("created_at"),
-                "expire_at": document.get("expire_at"),
-                "is_produce_to_kafka": document.get("is_produce_to_kafka", False),
-                "update_count": document.get("update_count", 0),
-                "object": document.get("object")
-            }
-            batch.append(doc)
-
-            if len(batch) >= batch_size:
-                yield batch
-                batch = []
-
-        if batch:
-            yield batch
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        mongo_client.close()
+    kwargs['ti'].xcom_push(key='mongo_data', value=data)
 
 
 def create_bronze_schema():
@@ -193,36 +163,20 @@ with DAG(
         default_args=default_args,
         description='ETL with Dynamic Batch Size',
         schedule_interval=None,
-        start_date=datetime(2025, 1, 1),
+        start_date=days_ago(1),
         max_active_runs=1,
         catchup=False,
 ) as dag:
 
-    extract_postgres = PythonOperator(
-        dag=dag,
-        task_id='extract_postgres',
-        python_callable=extract_from_postgres
+    process_data_task = PythonOperator(
+        task_id='process_data_from_postgres_task',
+        python_callable=process_data_from_postgres,
+        provide_context=True,
+        op_kwargs={'conn_id': 'oltp_postgres_conn'}
     )
 
-# extract_mongo = PythonOperator(
-#     dag=dag,
-#     task_id='extract_mongo',
-#     python_callable=extract_from_mongo,
-#     op_kwargs={'batch_size': get_dynamic_batch_size()},
-# )
-#
-# create_bronze_schema = PythonOperator(
-#     dag=dag,
-#     task_id='create_schema',
-#     python_callable=create_bronze_schema
-# )
-#
-# load_clickhouse = PythonOperator(
-#     dag=dag,
-#     task_id='load_clickhouse',
-#     python_callable=load_to_clickhouse,
-#     op_kwargs={
-#         'postgres_batches': '{{ ti.xcom_pull(task_ids="extract_postgres") }}',
-#         'mongo_batches': '{{ ti.xcom_pull(task_ids="extract_mongo") }}',
-#     },
-# )
+    process_data_from_mongo = PythonOperator(
+        task_id='process_data_from_mongo_task',
+        python_callable=process_data_from_mongo,
+        op_kwargs={'conn_id': 'oltp_mongo_conn'}
+    )
