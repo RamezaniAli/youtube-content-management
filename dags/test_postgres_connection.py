@@ -8,7 +8,7 @@ from airflow.utils.dates import days_ago
 def process_data(**kwargs):
     conn_id = kwargs['conn_id']
     hook = PostgresHook(postgres_conn_id=conn_id)
-    sql_query = "SELECT * FROM channels;"
+    sql_query = "SELECT * FROM channels limit 1000;"
     records = hook.get_records(sql_query)
     kwargs['ti'].xcom_push(key='postgres_data', value=records)
     return records
