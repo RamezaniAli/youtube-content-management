@@ -1,5 +1,4 @@
 FROM apache/airflow:2.10.4
 
-COPY requirements.txt /
-RUN cat /requirements.txt  # To verify the contents are copied correctly
-RUN pip install -r /requirements.txt
+COPY requirements.txt /tmp/
+RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir -r /tmp/requirements.txt
