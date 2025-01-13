@@ -17,15 +17,15 @@ def get_dynamic_batch_size(max_batch_size=1000):
 
 
 def extract_from_postgres(**kwargs):
-    pg_hook = PostgresHook('')
-    conn = pg_hook.get_conn()
+    hook = PostgresHook('oltp_postgres_conn')
+    conn = hook.get_conn()
     cursor = conn.cursor()
     batch_size = 1000
     offset = 0
     records = []
 
     while True:
-        query = f"SELECT * FROM channels LIMIT {batch_size} OFFSET {offset}"
+        query = f"SELECT * FROM channels LIMIT 1000"
         cursor.execute(query)
 
         result = cursor.fetchall()
@@ -35,7 +35,7 @@ def extract_from_postgres(**kwargs):
 
         records.extend(result)
 
-        offset += batch_size
+        # offset += batch_size
 
 
     kwargs['ti'].xcom_push(key='postgres_data', value=records)
