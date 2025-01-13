@@ -168,7 +168,7 @@ with DAG(
         catchup=False,
 ) as dag:
 
-    process_data_task = PythonOperator(
+    process_data_from_postgres = PythonOperator(
         task_id='process_data_from_postgres_task',
         python_callable=process_data_from_postgres,
         provide_context=True,
@@ -180,3 +180,5 @@ with DAG(
         python_callable=process_data_from_mongo,
         op_kwargs={'conn_id': 'oltp_mongo_conn'}
     )
+
+    process_data_from_postgres >> process_data_from_mongo
