@@ -5,8 +5,10 @@ from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
 
 
-def test_clickhouse():
-    conn = BaseHook.get_connection('wh_clickhouse_conn')
+# Callbacks
+def process_data_task(**kwargs):
+    conn_id = kwargs['conn_id']
+    conn = BaseHook.get_connection(conn_id)
     host = conn.host
     port = conn.port
     username = conn.login
@@ -25,14 +27,16 @@ def test_clickhouse():
     return f"Number of records in channels table: {count}"
 
 
+# DAG and its tasks
 with DAG(
-    dag_id='test_clickhouse',
+    dag_id='clickhouse_record_count_dag',
     schedule_interval=None,
     start_date=days_ago(1),
     catchup=False
 ) as dag:
 
     process_data_task = PythonOperator(
-        task_id='test_clickhouse',
-        python_callable=test_clickhouse
+        task_id='process_data',
+        python_callable=process_data_task,
+        op_kwargs={'conn_id': 'wh_clickhouse_conn'}
     )
