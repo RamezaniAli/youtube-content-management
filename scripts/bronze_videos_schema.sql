@@ -30,4 +30,4 @@ CREATE TABLE IF NOT EXISTS bronze.videos_test_2
     _raw_object         String
 )
 ENGINE = MergeTree()
-ORDER BY (owner_id);
+ORDER BY (id);
