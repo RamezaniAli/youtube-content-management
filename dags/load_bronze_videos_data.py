@@ -30,7 +30,7 @@ def create_videos_schema(**kwargs):
     with open(sql_file_path, 'r') as file:
         create_videos_table_query = file.read()
     # Execute the SQL query
-    client.query(create_videos_table_query)
+    # client.query(create_videos_table_query)
     return 'Done!'
 
 
@@ -55,46 +55,57 @@ def etl_data_from_mongo(**kwargs):
     mongo_hook = MongoHook(mongo_conn_id=mongo_conn_id)
     mongo_db = mongo_hook.get_conn()['utube']
     mongo_videos_collection = mongo_db['videos']
-    documents = list(mongo_videos_collection.find().limit(5))
-    # Prepare data for ClickHouse insertion
-    data_to_insert = []
-    for doc in documents:
-        data_to_insert.append((
-            doc['_id'],
-            doc['object']['owner_username'],
-            doc['object']['owner_id'],
-            doc['object']['title'],
-            doc['object']['uid'],
-            doc['object']['visit_count'],
-            doc['object']['owner_name'],
-            doc['object']['poster'],
-            datetime.fromisoformat(doc['object']['posted_date']),
-            doc['object']['posted_timestamp'],
-            datetime.fromisoformat(doc['object']['sdate_rss']),
-            doc['object']['sdate_rss_tp'],
-            doc['object']['comments'],
-            doc['object']['description'],
-            doc['object']['is_deleted'],
-            doc['created_at'],
-            doc['expire_at'],
-            doc.get('is_produce_to_kafka', False),
-            doc.get('update_count', 0),
-            json.dumps(doc['object'])
-        ))
-    # Prepare column names for insertion
-    column_names = [
-        'id', 'owner_username', 'owner_id', 'title', 'uid', 'visit_count',
-        'owner_name', 'poster', 'posted_date', 'posted_timestamp', 'sdate_rss',
-        'sdate_rss_tp', 'comments', 'description', 'is_deleted', 'created_at',
-        'expire_at', 'is_produce_to_kafka', 'update_count', '_raw_object'
-    ]
-    # Execute the insert query for each set of values
-    clickhouse_client.insert(
-        'videos_test',
-        data_to_insert,
-        column_names=column_names
-    )
-    return data_to_insert
+    batch_size = 10000
+    skip = 0
+    batch_number = 1
+    while True:
+        documents = list(mongo_videos_collection.find().skip(skip).limit(batch_size))
+        if not documents:
+            break
+        print('='*100)
+        print('Batch Size is:', batch_size)
+        print('='*100)
+        skip += batch_size
+        batch_number += 1
+    # # Prepare data for ClickHouse insertion
+    # data_to_insert = []
+    # for doc in documents:
+    #     data_to_insert.append((
+    #         doc['_id'],
+    #         doc['object']['owner_username'],
+    #         doc['object']['owner_id'],
+    #         doc['object']['title'],
+    #         doc['object']['uid'],
+    #         doc['object']['visit_count'],
+    #         doc['object']['owner_name'],
+    #         doc['object']['poster'],
+    #         datetime.fromisoformat(doc['object']['posted_date']),
+    #         doc['object']['posted_timestamp'],
+    #         datetime.fromisoformat(doc['object']['sdate_rss']),
+    #         doc['object']['sdate_rss_tp'],
+    #         doc['object']['comments'],
+    #         doc['object']['description'],
+    #         doc['object']['is_deleted'],
+    #         doc['created_at'],
+    #         doc['expire_at'],
+    #         doc.get('is_produce_to_kafka', False),
+    #         doc.get('update_count', 0),
+    #         json.dumps(doc['object'])
+    #     ))
+    # # Prepare column names for insertion
+    # column_names = [
+    #     'id', 'owner_username', 'owner_id', 'title', 'uid', 'visit_count',
+    #     'owner_name', 'poster', 'posted_date', 'posted_timestamp', 'sdate_rss',
+    #     'sdate_rss_tp', 'comments', 'description', 'is_deleted', 'created_at',
+    #     'expire_at', 'is_produce_to_kafka', 'update_count', '_raw_object'
+    # ]
+    # # Execute the insert query for each set of values
+    # clickhouse_client.insert(
+    #     'videos_test',
+    #     data_to_insert,
+    #     column_names=column_names
+    # )
+    return 'Done!'
 
 
 # DAG and its tasks
