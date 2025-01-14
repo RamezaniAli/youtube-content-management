@@ -32,7 +32,7 @@ def create_channels_schema(**kwargs):
 
 # DAG and its tasks
 with DAG(
-    dag_id='load_bronze_postgres_data',
+    dag_id='load_bronze_channels_data',
     schedule_interval=None,
     start_date=days_ago(1),
     catchup=False
