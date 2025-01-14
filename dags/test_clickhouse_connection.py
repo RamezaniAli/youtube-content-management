@@ -11,16 +11,15 @@ def test_clickhouse():
     port = conn.port
     username = conn.login
     password = conn.password
-    database = conn.schema
+    # database = conn.schema
     client = clickhouse_connect.get_client(
         host=host,
         port=port,
         username=username,
         password=password,
-        database=database
+        database='bronze'
     )
-    data = client.command('SHOW DATABASES')
-
+    data = client.command('SHOW TABLES')
     return data
 
 
