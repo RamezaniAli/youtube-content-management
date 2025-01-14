@@ -5,6 +5,7 @@ from airflow.operators.dummy import DummyOperator
 from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
 from airflow.providers.mongo.hooks.mongo import MongoHook
+from datetime import datetime
 
 
 # Callbacks
@@ -66,7 +67,7 @@ def etl_data_from_mongo(**kwargs):
             doc['object']['visit_count'],
             doc['object']['owner_name'],
             doc['object']['poster'],
-            doc['object']['posted_date'],
+            datetime.fromisoformat(doc['object']['posted_date']) if doc['object']['posted_date'] else "",
             doc['object']['posted_timestamp'],
             doc['object']['sdate_rss'],
             doc['object']['sdate_rss_tp'],
