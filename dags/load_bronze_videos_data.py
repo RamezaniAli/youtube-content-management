@@ -33,13 +33,63 @@ def create_videos_schema(**kwargs):
 
 
 def etl_data_from_mongo(**kwargs):
-    mongo_conn_id = kwargs['mongo_conn_id']
+    # Connect to Clickhouse
+    clickhouse_conn_id = kwargs['clickhouse_conn_id']
+    clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
+    clickhouse_host = clickhouse_connection.host
+    clickhouse_port = clickhouse_connection.port
+    clickhouse_username = clickhouse_connection.login
+    clickhouse_password = clickhouse_connection.password
+    clickhouse_database = 'bronze'
+    clickhouse_client = clickhouse_connect.get_client(
+        host=clickhouse_host,
+        port=clickhouse_port,
+        username=clickhouse_username,
+        password=clickhouse_password,
+        database=clickhouse_database
+    )
     # Connect to MongoDB
+    mongo_conn_id = kwargs['mongo_conn_id']
     mongo_hook = MongoHook(mongo_conn_id=mongo_conn_id)
     mongo_db = mongo_hook.get_conn()['utube']
     mongo_videos_collection = mongo_db['videos']
     documents = list(mongo_videos_collection.find().limit(10))
-    return documents
+    # Prepare data for ClickHouse insertion
+    data_to_insert = []
+    for doc in documents:
+        data_to_insert.append((
+            doc['_id'],
+            doc['object']['owner_username'],
+            doc['object']['owner_id'],
+            doc['object']['title'],
+            doc['object']['uid'],
+            doc['object']['visit_count'],
+            doc['object']['owner_name'],
+            doc['object']['poster'],
+            doc['object']['posted_date'],
+            doc['object']['posted_timestamp'],
+            doc['object']['sdate_rss'],
+            doc['object']['sdate_rss_tp'],
+            doc['object']['comments'],
+            doc['object']['description'],
+            doc['object']['is_deleted'],
+            doc['created_at'],
+            doc['expire_at'],
+            doc.get('is_produce_to_kafka', False),
+            doc.get('update_count', 0),
+            doc['object']
+        ))
+    # Prepare the SQL INSERT query
+    insert_query = """
+    INSERT INTO videos_test 
+    (id, owner_username, owner_id, title, uid, visit_count, owner_name, poster, posted_date, posted_timestamp, sdate_rss, sdate_rss_tp, comments, is_deleted, created_at, expire_at, is_produce_to_kafka, update_count, _raw_object)
+    VALUES
+    """
+    # Execute the insert query for each set of values
+    if data_to_insert:
+        clickhouse_client.insert(query=insert_query, values=data_to_insert)
+
+    return f"Inserted {len(data_to_insert)} records into ClickHouse."
 
 
 # DAG and its tasks
