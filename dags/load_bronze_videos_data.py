@@ -55,7 +55,7 @@ def etl_data_from_mongo(**kwargs):
     mongo_hook = MongoHook(mongo_conn_id=mongo_conn_id)
     mongo_db = mongo_hook.get_conn()['utube']
     mongo_videos_collection = mongo_db['videos']
-    documents = list(mongo_videos_collection.find().limit(2))
+    documents = list(mongo_videos_collection.find().limit(5))
     # Prepare data for ClickHouse insertion
     data_to_insert = []
     for doc in documents:
@@ -90,7 +90,7 @@ def etl_data_from_mongo(**kwargs):
     ]
     # Execute the insert query for each set of values
     clickhouse_client.insert(
-        'videos_test_4',
+        'videos_test',
         data_to_insert,
         column_names=column_names
     )
