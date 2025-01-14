@@ -6,7 +6,7 @@ from airflow.utils.dates import days_ago
 
 
 def test_clickhouse():
-    client = clickhouse_connect.get_client(host='127.0.0.1', port=8123)
+    client = clickhouse_connect.get_client(host='127.0.0.1', port=8123, username='', password='', database='bronze')
 
     data = client.command('show databases')
 
