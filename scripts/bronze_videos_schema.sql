@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS bronze.videos
+CREATE TABLE IF NOT EXISTS bronze.videos_test
 (
     id                  UInt64,
     owner_username      String,
@@ -30,5 +30,4 @@ CREATE TABLE IF NOT EXISTS bronze.videos
     _raw_object         String
 )
 ENGINE = MergeTree()
-PARTITION BY toYYYYMM(created_at)     
-ORDER BY (owner_id, created_at);
+ORDER BY (owner_id);
