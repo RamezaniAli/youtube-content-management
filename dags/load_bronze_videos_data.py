@@ -67,28 +67,33 @@ def etl_data_from_mongo(**kwargs):
             doc['object']['visit_count'],
             doc['object']['owner_name'],
             doc['object']['poster'],
-            datetime.fromisoformat(doc['object']['posted_date']) if doc['object']['posted_date'] else "",
+            datetime.fromisoformat(doc['object']['posted_date']),
             doc['object']['posted_timestamp'],
-            doc['object']['sdate_rss'],
+            datetime.fromisoformat(doc['object']['sdate_rss']),
             doc['object']['sdate_rss_tp'],
             doc['object']['comments'],
             doc['object']['description'],
             doc['object']['is_deleted'],
-            doc['created_at'],
-            doc['expire_at'],
+            datetime.fromisoformat(doc['created_at']),
+            datetime.fromisoformat(doc['expire_at']),
             doc.get('is_produce_to_kafka', False),
             doc.get('update_count', 0),
             doc['object']
         ))
     # Prepare column names for insertion
     column_names = [
-        'id', 'owner_username', 'owner_id', 'title', 'uid', 'visit_count', 'owner_name', 'poster', 
-        'posted_date', 'posted_timestamp', 'sdate_rss', 'sdate_rss_tp', 'comments', 'description', 
-        'is_deleted', 'created_at', 'expire_at', 'is_produce_to_kafka', 'update_count', '_raw_object'
+        'id', 'owner_username', 'owner_id', 'title', 'uid', 'visit_count',
+        'owner_name', 'poster', 'posted_date', 'posted_timestamp', 'sdate_rss',
+        'sdate_rss_tp', 'comments', 'description', 'is_deleted', 'created_at',
+        'expire_at', 'is_produce_to_kafka', 'update_count', '_raw_object'
     ]
     # Execute the insert query for each set of values
-    clickhouse_client.insert('videos_test_2', data_to_insert, column_names=column_names)
-    return f"Inserted {len(data_to_insert)} records into ClickHouse."
+    clickhouse_client.insert(
+        'videos_test_2',
+        data_to_insert,
+        column_names=column_names
+    )
+    return data_to_insert
 
 
 # DAG and its tasks
