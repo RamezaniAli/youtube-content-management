@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS bronze.videos
     visit_count         UInt64,
     owner_name          String,
     poster              String,
-    owener_avatar       Nullable(String), -- typo: owner_avatar
+    owner_avatar       Nullable(String),
     duration            Nullable(UInt64),
     posted_date         DateTime('UTC'),
     posted_timestamp    UInt64,
