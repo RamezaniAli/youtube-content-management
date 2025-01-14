@@ -74,7 +74,7 @@ def etl_data_from_mongo(**kwargs):
             doc['object']['comments'],
             doc['object']['description'],
             doc['object']['is_deleted'],
-            datetime.fromisoformat(doc['created_at']),
+            datetime.fromisoformat(doc['created_at']) if doc['created_at'] else None,
             datetime.fromisoformat(doc['expire_at']),
             doc.get('is_produce_to_kafka', False),
             doc.get('update_count', 0),
@@ -89,7 +89,7 @@ def etl_data_from_mongo(**kwargs):
     ]
     # Execute the insert query for each set of values
     clickhouse_client.insert(
-        'videos_test_2',
+        'videos_test_3',
         data_to_insert,
         column_names=column_names
     )

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS bronze.videos_test_2
+CREATE TABLE IF NOT EXISTS bronze.videos_test_3
 (
     id String PRIMARY KEY,
     owner_username      String,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS bronze.videos_test_2
     like_count          Nullable(UInt64),
     description         Nullable(String),
     is_deleted          UInt8,
-    created_at          DateTime('UTC'),
+    created_at          Nullable(DateTime('UTC')),
     expire_at           DateTime('UTC'),
     is_produce_to_kafka UInt8,
     update_count        UInt32,
