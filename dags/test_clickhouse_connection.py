@@ -2,13 +2,24 @@ import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-
+from airflow.hooks.base import BaseHook
 
 
 def test_clickhouse():
-    client = clickhouse_connect.get_client(host='127.0.0.1', port=8123, username='', password='', database='bronze')
-
-    data = client.command('show databases')
+    conn = BaseHook.get_connection('wh_clickhouse_conn')
+    host = conn.host
+    port = conn.port
+    username = conn.login
+    password = conn.password
+    database = conn.schema
+    client = clickhouse_connect.get_client(
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        database=database
+    )
+    data = client.command('SHOW DATABASES')
 
     return data
 
