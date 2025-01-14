@@ -73,9 +73,9 @@ def etl_data_from_mongo(**kwargs):
         # Prepare data for ClickHouse insertion
         print('='*100)
         print('Batch Number:', batch_number)
-        print('='*100)
         data_to_insert = []
         for doc in documents:
+            print(doc['object'])
             data_to_insert.append((
                 doc['_id'],
                 doc['object']['owner_username'],
@@ -85,7 +85,7 @@ def etl_data_from_mongo(**kwargs):
                 doc['object']['visit_count'],
                 doc['object']['owner_name'],
                 doc['object']['poster'],
-                doc['object']['owener_avatar'],
+                # doc['object']['owener_avatar'],
                 doc['object']['duration'],
                 datetime.fromisoformat(doc['object']['posted_date']),
                 doc['object']['posted_timestamp'],
@@ -102,13 +102,14 @@ def etl_data_from_mongo(**kwargs):
                 doc.get('update_count', 0),
                 json.dumps(doc['object'])
             ))
+        print('='*100)
         # Execute the insert query for each set of values
-        clickhouse_client.insert(
-            'videos',
-            data_to_insert,
-            column_names=clickhouse_videos_column_names
-        )
-
+        # clickhouse_client.insert(
+        #     'videos',
+        #     data_to_insert,
+        #     column_names=clickhouse_videos_column_names
+        # )
+        break
         skip += batch_size
         batch_number += 1
     return 'Done!'
