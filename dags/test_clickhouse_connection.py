@@ -11,16 +11,18 @@ def test_clickhouse():
     port = conn.port
     username = conn.login
     password = conn.password
-    # database = conn.schema
+    database = 'bronze'
     client = clickhouse_connect.get_client(
         host=host,
         port=port,
         username=username,
         password=password,
-        database='bronze'
+        database=database
     )
-    data = client.command('SHOW TABLES')
-    return data
+    query = 'SELECT COUNT(*) FROM channels'
+    result = client.query(query)
+    count = result.result_set[0][0]
+    return f"Number of records in channels table: {count}"
 
 
 with DAG(
