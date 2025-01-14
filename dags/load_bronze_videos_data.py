@@ -45,9 +45,10 @@ def etl_data_from_mongo(**kwargs):
     clickhouse_database = 'bronze'
     clickhouse_videos_column_names = [
         'id', 'owner_username', 'owner_id', 'title', 'uid', 'visit_count',
-        'owner_name', 'poster', 'posted_date', 'posted_timestamp', 'sdate_rss',
-        'sdate_rss_tp', 'comments', 'description', 'is_deleted', 'created_at',
-        'expire_at', 'is_produce_to_kafka', 'update_count', '_raw_object'
+        'owner_name', 'poster', 'owener_avatar', 'duration', 'posted_date',
+        'posted_timestamp', 'sdate_rss', 'sdate_rss_tp', 'comments', 'frame',
+        'like_count', 'description', 'is_deleted', 'created_at', 'expire_at',
+        'is_produce_to_kafka', 'update_count', '_raw_object'
     ]
     clickhouse_client = clickhouse_connect.get_client(
         host=clickhouse_host,
@@ -84,11 +85,15 @@ def etl_data_from_mongo(**kwargs):
                 doc['object']['visit_count'],
                 doc['object']['owner_name'],
                 doc['object']['poster'],
+                doc['object']['owener_avatar'],
+                doc['object']['duration'],
                 datetime.fromisoformat(doc['object']['posted_date']),
                 doc['object']['posted_timestamp'],
                 datetime.fromisoformat(doc['object']['sdate_rss']),
                 doc['object']['sdate_rss_tp'],
                 doc['object']['comments'],
+                doc['object']['frame'],
+                doc['object']['like_count'],
                 doc['object']['description'],
                 doc['object']['is_deleted'],
                 doc['created_at'],
@@ -99,7 +104,7 @@ def etl_data_from_mongo(**kwargs):
             ))
         # Execute the insert query for each set of values
         clickhouse_client.insert(
-            'videos_test',
+            'videos',
             data_to_insert,
             column_names=clickhouse_videos_column_names
         )

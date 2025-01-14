@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS bronze.videos_test
+CREATE TABLE IF NOT EXISTS bronze.videos
 (
     id String PRIMARY KEY,
     owner_username      String,
