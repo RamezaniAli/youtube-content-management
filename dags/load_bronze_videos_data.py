@@ -74,8 +74,8 @@ def etl_data_from_mongo(**kwargs):
             doc['object']['comments'],
             doc['object']['description'],
             doc['object']['is_deleted'],
-            datetime.fromisoformat(doc['created_at']) if doc['created_at'] else None,
-            datetime.fromisoformat(doc['expire_at']),
+            doc['created_at'],
+            doc['expire_at'],
             doc.get('is_produce_to_kafka', False),
             doc.get('update_count', 0),
             doc['object']
