@@ -30,7 +30,7 @@ def create_channels_schema(**kwargs):
         PRIMARY KEY (id)
         ORDER BY (id);
     """
-    # client.query(create_channels_table_query)
+    client.query(create_channels_table_query)
     return "Done!"
 
 

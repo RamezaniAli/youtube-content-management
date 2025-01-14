@@ -21,10 +21,10 @@ def process_data_task(**kwargs):
         password=password,
         database=database
     )
-    query = 'SELECT COUNT(*) FROM channels'
+    query = "SHOW TABLES;"
     result = client.query(query)
-    count = result.result_set[0][0]
-    return f"Number of records in channels table: {count}"
+    tables = [row[0] for row in result.result_set]
+    return f"Tables in the bronze database: {tables}"
 
 
 # DAG and its tasks
