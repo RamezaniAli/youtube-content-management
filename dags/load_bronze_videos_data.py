@@ -63,7 +63,7 @@ def etl_data_from_mongo(**kwargs):
         if not documents:
             break
         print('='*100)
-        print('Batch Size is:', batch_size)
+        print('Batch Size is:', batch_number)
         print('='*100)
         skip += batch_size
         batch_number += 1
