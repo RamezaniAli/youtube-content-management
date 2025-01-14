@@ -1,8 +1,10 @@
 import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.dummy import DummyOperator
 from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
+from airflow.providers.mongo.hooks.mongo import MongoHook
 
 
 # Callbacks
@@ -30,6 +32,16 @@ def create_videos_schema(**kwargs):
     return 'Done!'
 
 
+def etl_data_from_mongo(**kwargs):
+    mongo_conn_id = kwargs['mongo_conn_id']
+    # Connect to MongoDB
+    mongo_hook = MongoHook(mongo_conn_id=mongo_conn_id)
+    mongo_db = mongo_hook.get_conn()['utube']
+    mongo_videos_collection = mongo_db['videos']
+    documents = list(mongo_videos_collection.find().limit(10))
+    return documents
+
+
 # DAG and its tasks
 with DAG(
     dag_id='load_bronze_videos_data',
@@ -44,3 +56,19 @@ with DAG(
         provide_context=True,
         op_kwargs={'clickhouse_conn_id': 'wh_clickhouse_conn'}
     )
+
+    etl_data_from_mongo_task = PythonOperator(
+        task_id='etl_data_from_mongo_task',
+        python_callable=etl_data_from_mongo,
+        provide_context=True,
+        op_kwargs={
+            'mongo_conn_id': 'oltp_mongo_conn',
+            'clickhouse_conn_id': 'wh_clickhouse_conn'
+        }
+    )
+
+    dummy_task = DummyOperator(
+        task_id='dummy_task'
+    )
+
+    create_videos_schema_task >> etl_data_from_mongo_task >> dummy_task
