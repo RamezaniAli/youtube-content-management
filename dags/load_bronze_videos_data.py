@@ -79,14 +79,14 @@ def etl_data_from_mongo(**kwargs):
             doc.get('update_count', 0),
             doc['object']
         ))
-    # Prepare the SQL INSERT query
-    insert_query = """
-    INSERT INTO videos_test 
-    (id, owner_username, owner_id, title, uid, visit_count, owner_name, poster, posted_date, posted_timestamp, sdate_rss, sdate_rss_tp, comments, is_deleted, created_at, expire_at, is_produce_to_kafka, update_count, _raw_object)
-    VALUES
-    """
+    # Prepare column names for insertion
+    column_names = [
+        'id', 'owner_username', 'owner_id', 'title', 'uid', 'visit_count', 'owner_name', 'poster', 
+        'posted_date', 'posted_timestamp', 'sdate_rss', 'sdate_rss_tp', 'comments', 'description', 
+        'is_deleted', 'created_at', 'expire_at', 'is_produce_to_kafka', 'update_count', '_raw_object'
+    ]
     # Execute the insert query for each set of values
-    clickhouse_client.query(insert_query, data_to_insert)
+    clickhouse_client.insert('videos_test', data_to_insert, column_names=column_names)
     return f"Inserted {len(data_to_insert)} records into ClickHouse."
 
 
