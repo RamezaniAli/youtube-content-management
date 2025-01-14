@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS bronze.videos_test_3
+CREATE TABLE IF NOT EXISTS bronze.videos_test_4
 (
     id String PRIMARY KEY,
     owner_username      String,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS bronze.videos_test_3
 
     _ingestion_ts       DateTime('UTC') DEFAULT now(),
     _source             String DEFAULT 'mongo',
-    _raw_object         String
+    _raw_object         JSON
 )
 ENGINE = MergeTree()
 ORDER BY (id);

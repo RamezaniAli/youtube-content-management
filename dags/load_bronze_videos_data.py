@@ -6,6 +6,7 @@ from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
 from airflow.providers.mongo.hooks.mongo import MongoHook
 from datetime import datetime
+import json
 
 
 # Callbacks
@@ -78,7 +79,7 @@ def etl_data_from_mongo(**kwargs):
             doc['expire_at'],
             doc.get('is_produce_to_kafka', False),
             doc.get('update_count', 0),
-            doc['object']
+            json.dumps(doc['object'])
         ))
     # Prepare column names for insertion
     column_names = [
@@ -89,7 +90,7 @@ def etl_data_from_mongo(**kwargs):
     ]
     # Execute the insert query for each set of values
     clickhouse_client.insert(
-        'videos_test_3',
+        'videos_test_4',
         data_to_insert,
         column_names=column_names
     )
