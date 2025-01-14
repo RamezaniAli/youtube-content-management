@@ -330,6 +330,9 @@ services:
       - postgres
     restart: always
     privileged: true
+    environment:
+        CLICKHOUSE_USER: utube
+        CLICKHOUSE_PASSWORD: utube
     volumes:
       - clickhouse-data-volume:/var/lib/clickhouse/
       - clickhouse-log-volume:/var/log/clickhouse-server/
