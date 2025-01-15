@@ -1,10 +1,10 @@
-CREATE TABLE IF NOT EXISTS bronze.channels_test
+CREATE TABLE IF NOT EXISTS bronze.channels_test_2
 (
     id                      String PRIMARY KEY,
     username                String,
     userid                  String,
     avatar_thumbnail        String,
-    is_official             UInt8 DEFAULT 0,
+    is_official             Nullable(UInt8),
     name                    String,
     bio_links               String,
     total_video_visit       Int64,

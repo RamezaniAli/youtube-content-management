@@ -57,38 +57,47 @@ def etl_data_from_postgres(**kwargs):
     # Connect to PostgreSQL
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
-    # Prepare data for ClickHouse insertion
-    data_to_insert = []
-    batch_size = 5
+    batch_size = 1000
     skip = 0
-    sql_query = f"SELECT * FROM channels LIMIT {batch_size} OFFSET {skip}"
-    records = pg_hook.get_records(sql_query)
-    for record in records:
-        data_to_insert.append((
-            record[0],  # _id
-            record[1],  # username
-            record[2],  # userid
-            record[3],  # avatar_thumbnail
-            record[4],  # is_official
-            record[5],  # name
-            record[6],  # bio_links
-            record[7],  # total_video_visit
-            record[8],  # video_count
-            record[9],  # start_date
-            record[10],  # start_date_timestamp
-            record[11],  # followers_count
-            record[12],  # following_count
-            record[13],  # country
-            record[14],  # platform
-            record[15],  # created_at
-            record[16],  # update_count
-        ))
-    # Execute the insert query
-    clickhouse_client.insert(
-        'channels_test',
-        data_to_insert,
-        column_names=clickhouse_channels_column_names
-    )
+    batch_number = 1
+    while True:
+        sql_query = f"SELECT * FROM channels LIMIT {batch_size} OFFSET {skip}"
+        records = pg_hook.get_records(sql_query)
+        if not records:
+            break
+        # Prepare data for ClickHouse insertion
+        print('='*100)
+        print('Batch Number:', batch_number)
+        print('='*100)
+        data_to_insert = []
+        for record in records:
+            data_to_insert.append((
+                record[0],  # _id
+                record[1],  # username
+                record[2],  # userid
+                record[3],  # avatar_thumbnail
+                record[4],  # is_official
+                record[5],  # name
+                record[6],  # bio_links
+                record[7],  # total_video_visit
+                record[8],  # video_count
+                record[9],  # start_date
+                record[10],  # start_date_timestamp
+                record[11],  # followers_count
+                record[12],  # following_count
+                record[13],  # country
+                record[14],  # platform
+                record[15],  # created_at
+                record[16],  # update_count
+            ))
+        # Execute the insert query
+        clickhouse_client.insert(
+            'channels_test_2',
+            data_to_insert,
+            column_names=clickhouse_channels_column_names
+        )
+        skip += batch_size
+        batch_number += 1
     return 'Done!'
 
 
