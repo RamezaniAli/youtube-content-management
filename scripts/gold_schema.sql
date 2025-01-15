@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS gold.top_performing_channels
 )
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(snapshot_date)
-ORDER BY (highest_followers_count, highest_video_visits, highest_video_count);
+ORDER BY (channel_userid, snapshot_date);
 
 -- video engagement metrics
 
