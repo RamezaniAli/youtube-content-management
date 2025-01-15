@@ -22,4 +22,4 @@ CREATE TABLE IF NOT EXISTS bronze.channels_test
     _ingestion_ts           DateTime DEFAULT now(),
 )
 ENGINE = MergeTree()
-ORDER BY (userid);
+ORDER BY (id, userid);
