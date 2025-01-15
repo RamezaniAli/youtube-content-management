@@ -31,6 +31,28 @@ def create_channels_schema(**kwargs):
     return 'Done!'
 
 
+def etl_data_from_postgres(**kwargs):
+    # Connect to Clickhouse
+    clickhouse_conn_id = kwargs['postgres_conn_id']
+    clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
+    clickhouse_host = clickhouse_connection.host
+    clickhouse_port = clickhouse_connection.port
+    clickhouse_username = clickhouse_connection.login
+    clickhouse_password = clickhouse_connection.password
+    clickhouse_database = 'bronze'
+    clickhouse_client = clickhouse_connect.get_client(
+        host=clickhouse_host,
+        port=clickhouse_port,
+        username=clickhouse_username,
+        password=clickhouse_password,
+        database=clickhouse_database
+    )
+    # Connect to PostgreSQL
+    # Prepare data for ClickHouse insertion
+    # Execute the insert query
+    return 'Done!'
+
+
 # DAG and its tasks
 with DAG(
     dag_id='load_bronze_channels_data',
@@ -46,8 +68,18 @@ with DAG(
         op_kwargs={'clickhouse_conn_id': 'wh_clickhouse_conn'}
     )
 
+    etl_data_from_postgres_task = PythonOperator(
+        task_id='etl_data_from_postgres_task',
+        python_callable=etl_data_from_postgres,
+        provide_context=True,
+        op_kwargs={
+            'postgres_conn_id': 'oltp_postgres_conn',
+            'clickhouse_conn_id': 'wh_clickhouse_conn'
+        }
+    )
+
     dummy_task = DummyOperator(
         task_id='dummy_task'
     )
 
-    create_channels_schema_task >> dummy_task
+    create_channels_schema_task >> etl_data_from_postgres_task >> dummy_task
