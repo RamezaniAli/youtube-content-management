@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS bronze.channels_test_3
+CREATE TABLE IF NOT EXISTS bronze.channels_test_4
 (
     id                      String PRIMARY KEY,
     username                String,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS bronze.channels_test_3
     bio_links               String,
     total_video_visit       Int64,
     video_count             Int32,
-    start_date              DateTime('UTC'),
+    start_date              DATE,
     start_date_timestamp    Int64,
     followers_count         Nullable(Int64),
     following_count         Nullable(Int64),
