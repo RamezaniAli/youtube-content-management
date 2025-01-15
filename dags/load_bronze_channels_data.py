@@ -34,7 +34,7 @@ def create_channels_schema(**kwargs):
 
 def etl_data_from_postgres(**kwargs):
     # Connect to Clickhouse
-    clickhouse_conn_id = kwargs['wh_clickhouse_conn']
+    clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_host = clickhouse_connection.host
     clickhouse_port = clickhouse_connection.port
