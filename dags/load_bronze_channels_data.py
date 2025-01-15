@@ -1,6 +1,7 @@
 import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.dummy import DummyOperator
 from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
 
@@ -44,3 +45,9 @@ with DAG(
         provide_context=True,
         op_kwargs={'clickhouse_conn_id': 'wh_clickhouse_conn'}
     )
+
+    dummy_task = DummyOperator(
+        task_id='dummy_task'
+    )
+
+    create_channels_schema_task >> dummy_task
