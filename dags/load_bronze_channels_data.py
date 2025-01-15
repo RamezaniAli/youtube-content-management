@@ -85,7 +85,7 @@ def etl_data_from_postgres(**kwargs):
         ))
     # Execute the insert query
     clickhouse_client.insert(
-        'channels_test_4',
+        'channels_test',
         data_to_insert,
         column_names=clickhouse_channels_column_names
     )
