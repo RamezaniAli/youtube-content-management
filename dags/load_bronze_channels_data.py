@@ -49,9 +49,15 @@ def etl_data_from_postgres(**kwargs):
         database=clickhouse_database
     )
     # Connect to PostgreSQL
-    postgres_conn_id = kwargs['oltp_postgres_conn']
-    postgres_hook = PostgresHook(postgres_conn_id=postgres_conn_id)
+    pg_conn_id = kwargs['oltp_postgres_conn']
+    pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
     # Prepare data for ClickHouse insertion
+    batch_size = 5
+    skip = 0
+    sql_query = f"SELECT * FROM your_table LIMIT {batch_size} OFFSET {skip}"
+    records = pg_hook.get_records(sql_query)
+    for record in records:
+        print(record)
     # Execute the insert query
     return 'Done!'
 
