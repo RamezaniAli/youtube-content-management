@@ -1,5 +1,6 @@
 import clickhouse_connect
 from airflow import DAG
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.utils.dates import days_ago
@@ -33,7 +34,7 @@ def create_channels_schema(**kwargs):
 
 def etl_data_from_postgres(**kwargs):
     # Connect to Clickhouse
-    clickhouse_conn_id = kwargs['postgres_conn_id']
+    clickhouse_conn_id = kwargs['wh_clickhouse_conn']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_host = clickhouse_connection.host
     clickhouse_port = clickhouse_connection.port
@@ -48,6 +49,8 @@ def etl_data_from_postgres(**kwargs):
         database=clickhouse_database
     )
     # Connect to PostgreSQL
+    postgres_conn_id = kwargs['oltp_postgres_conn']
+    postgres_hook = PostgresHook(postgres_conn_id=postgres_conn_id)
     # Prepare data for ClickHouse insertion
     # Execute the insert query
     return 'Done!'
