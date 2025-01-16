@@ -139,6 +139,7 @@ services:
     <<: *airflow-common
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}/requirements.txt:/requirements.txt
+    user: "airflow"
     command: >
       bash -c "pip install --no-cache-dir -r /requirements.txt && airflow scheduler"
     healthcheck:
