@@ -140,7 +140,7 @@ services:
     <<: *airflow-common
     user: "airflow"
     command: >
-      bash -c "pip install --no-cache-dir -r /requirements.txt && airflow scheduler"
+      bash -c "pip install --no-cache-dir -r /requirements.txt && scheduler"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
       interval: 30s
