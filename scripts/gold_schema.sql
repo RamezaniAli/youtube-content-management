@@ -1,7 +1,6 @@
 -- Create the database if it doesn't exist
 CREATE DATABASE IF NOT EXISTS gold;
 
-
 -- Channel Growth Over Time
 
 CREATE TABLE IF NOT EXISTS gold.channel_growth
@@ -19,7 +18,7 @@ CREATE TABLE IF NOT EXISTS gold.channel_growth
 )
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(snapshot_date)
-ORDER BY (channel_userid, snapshot_date, channel_country);
+ORDER BY (channel_country, channel_userid, snapshot_date);
 
 
 -- top performing channels
@@ -39,7 +38,7 @@ CREATE TABLE IF NOT EXISTS gold.top_performing_channels
 )
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(snapshot_date)
-ORDER BY (channel_userid, highest_video_visits, highest_followers_count, highest_video_count);
+ORDER BY (channel_userid, snapshot_date);
 
 -- video engagement metrics
 
@@ -58,7 +57,7 @@ CREATE TABLE IF NOT EXISTS gold.video_engagement_metrics
 )
 ENGINE = AggregatingMergeTree()
 PARTITION BY toYYYYMM(video_posted_date)
-ORDER BY (video_uid, avg_engagement_rate_state, video_posted_date);
+ORDER BY (video_uid, video_posted_date);
 
 
 -- content popularity analysis
@@ -68,12 +67,13 @@ CREATE TABLE IF NOT EXISTS gold.content_popularity_analysis
     video_uid               String,
     video_title             String,
     visit_count_state       AggregateFunction(sum, UInt64),
+    snapshot_date            Date,
 
     gold_ingestion_ts       DateTime64(3, 'UTC') DEFAULT now()
 )
 ENGINE = AggregatingMergeTree()
-PARTITION BY toYYYYMM(gold_ingestion_ts)
-ORDER BY (video_uid, gold_ingestion_ts);
+PARTITION BY toYYYYMM(snapshot_date)
+ORDER BY (video_uid, snapshot_date);
 
 
 -- geographic distribution of channels
@@ -85,12 +85,13 @@ CREATE TABLE IF NOT EXISTS gold.geographic_distribution_of_channels
     total_followers_count  AggregateFunction(sum, Int64),
     total_video_visits     AggregateFunction(sum, UInt64),
     total_channels_state   AggregateFunction(count, String),
+    snapshot_date            Date,
 
     gold_ingestion_ts      DateTime64(3, 'UTC') DEFAULT now()
 )
 ENGINE = AggregatingMergeTree()
-PARTITION BY toYYYYMM(channel_region, gold_ingestion_ts)
-ORDER BY (channel_region, country, gold_ingestion_ts);
+PARTITION BY (channel_region, toYYYYMM(snapshot_date))
+ORDER BY (channel_region, channel_country, snapshot_date);
 
 
 -- channel activity and update trends
@@ -111,5 +112,5 @@ CREATE TABLE IF NOT EXISTS gold.channel_activity_and_update_trends
     gold_ingestion_ts       DateTime64(3, 'UTC') DEFAULT now()
 )
 ENGINE = AggregatingMergeTree()
-PARTITION BY toYYYYMM(gold_ingestion_ts)
-ORDER BY (channel_country, channel_userid, gold_ingestion_ts);
+PARTITION BY toYYYYMM(snapshot_date)
+ORDER BY (channel_country, channel_userid, snapshot_date);

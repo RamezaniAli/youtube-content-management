@@ -1,6 +1,12 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS silver.events_mv
-    TO silver.events
-    AS
+CREATE TEMPORARY TABLE IF NOT EXISTS batch_numbers (batch_id UInt8)
+ENGINE = Memory;
+
+INSERT INTO batch_numbers
+SELECT number as batch_id
+FROM system.numbers
+WHERE number < 10;
+
+INSERT INTO silver.events
     SELECT
     -- Channel Columns
     lower(c.id)                         AS channel_id,
@@ -70,72 +76,13 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS silver.events_mv
         'Low'
     )                                   AS popularity_category,
 
-    -- Channel tier calculation
     multiIf(
-        CAST(
-            ifNull(
-                assumeNotNull(c.followers_count),
-                assumeNotNull(
-                    avg(assumeNotNull(c.followers_count)) OVER (
-                        PARTITION BY
-                            c.country,
-                            floor(c.video_count/10)*10,
-                            toStartOfDay(c.start_date)
-                    )
-                )
-            ),
-            'Float64'
-        ) > 1000000, 'Tier 1',
-        CAST(
-            ifNull(
-                assumeNotNull(c.followers_count),
-                assumeNotNull(
-                    avg(assumeNotNull(c.followers_count)) OVER (
-                        PARTITION BY
-                            c.country,
-                            floor(c.video_count/10)*10,
-                            toStartOfDay(c.start_date)
-                    )
-                )
-            ),
-            'Float64'
-        ) > 500000, 'Tier 2',
+        c.followers_count > 1000000, 'Tier 1',
+        c.followers_count > 500000, 'Tier 2',
         'Tier 3'
     )                                   AS channel_tier,
 
-
-    -- Engagement rate calculation
-    if(
-        CAST(
-            ifNull(
-                assumeNotNull(c.followers_count),
-                assumeNotNull(
-                    avg(assumeNotNull(c.followers_count)) OVER (
-                        PARTITION BY
-                            c.country,
-                            floor(c.video_count/10)*10,
-                            toStartOfDay(c.start_date)
-                    )
-                )
-            ),
-            'Float64'
-        ) > 0,
-        CAST(v.visit_count, 'Float64') / CAST(
-            ifNull(
-                assumeNotNull(c.followers_count),
-                assumeNotNull(
-                    avg(assumeNotNull(c.followers_count)) OVER (
-                        PARTITION BY
-                            c.country,
-                            floor(c.video_count/10)*10,
-                            toStartOfDay(c.start_date)
-                    )
-                )
-            ),
-            'Float64'
-        ),
-        0
-    )                                   AS video_engagement_rate,
+    if(c.followers_count > 0, v.visit_count / c.followers_count, 0) AS video_engagement_rate,
 
     v.visit_count > 10000               AS is_trending,
     dateDiff('day', v.posted_date, now()) AS days_since_last_update,
@@ -153,5 +100,81 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS silver.events_mv
         'Other'
     )                                   AS channel_region
 
-FROM bronze.videos AS v
-INNER JOIN bronze.channels AS c ON v.owner_id = c.userid;
+    FROM bronze.videos AS v
+    INNER JOIN bronze.channels AS c ON v.owner_id = c.userid
+    CROSS JOIN batch_numbers b
+    WHERE deduppHash % 10 = b.batch_id;
+
+DROP TABLE IF EXISTS batch_numbers;
+DROP TABLE IF EXISTS records_before;
+
+
+
+
+-- Null handling for channel_tier, video_engagement_rate
+
+    -- -- Use the pre-calculated followers_count for channel_tier
+    -- multiIf(
+    --     CAST(
+    --         ifNull(
+    --             assumeNotNull(c.followers_count),
+    --             assumeNotNull(
+    --                 avg(assumeNotNull(c.followers_count)) OVER (
+    --                     PARTITION BY
+    --                         c.country,
+    --                         floor(c.video_count/10)*10,
+    --                         toStartOfDay(c.start_date)
+    --                 )
+    --             )
+    --         ),
+    --         'Float64'
+    --     ) > 1000000, 'Tier 1',
+    --     CAST(
+    --         ifNull(
+    --             assumeNotNull(c.followers_count),
+    --             assumeNotNull(
+    --                 avg(assumeNotNull(c.followers_count)) OVER (
+    --                     PARTITION BY
+    --                         c.country,
+    --                         floor(c.video_count/10)*10,
+    --                         toStartOfDay(c.start_date)
+    --                 )
+    --             )
+    --         ),
+    --         'Float64'
+    --     ) > 500000, 'Tier 2',
+    --     'Tier 3'
+    -- )                                   AS channel_tier,
+
+    -- -- Calculate engagement rate with proper NULL handling
+    -- if(
+    --     CAST(
+    --         ifNull(
+    --             assumeNotNull(c.followers_count),
+    --             assumeNotNull(
+    --                 avg(assumeNotNull(c.followers_count)) OVER (
+    --                     PARTITION BY
+    --                         c.country,
+    --                         floor(c.video_count/10)*10,
+    --                         toStartOfDay(c.start_date)
+    --                 )
+    --             )
+    --         ),
+    --         'Float64'
+    --     ) > 0,
+    --     CAST(v.visit_count, 'Float64') / CAST(
+    --         ifNull(
+    --             assumeNotNull(c.followers_count),
+    --             assumeNotNull(
+    --                 avg(assumeNotNull(c.followers_count)) OVER (
+    --                     PARTITION BY
+    --                         c.country,
+    --                         floor(c.video_count/10)*10,
+    --                         toStartOfDay(c.start_date)
+    --                 )
+    --             )
+    --         ),
+    --         'Float64'
+    --     ),
+    --     0
+    -- )                                   AS video_engagement_rate,

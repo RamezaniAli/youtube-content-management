@@ -10,7 +10,7 @@ SELECT
 
     toDate(silver_ingestion_ts) AS snapshot_date,
     sumState(channel_followers_count) AS followers_count_state,
-    sumState(toUInt64(channel_total_video_visit)) AS total_video_visits_state,
+    sumState(CAST(channel_total_video_visit AS Int64)) AS total_video_visits_state,
     sumState(channel_video_count) AS video_count_state,
 
     now() AS gold_ingestion_ts
@@ -66,7 +66,12 @@ SELECT
     now() AS gold_ingestion_ts
 FROM silver.events
 WHERE video_visit_count IS NOT NULL
-GROUP BY video_uid, toDate(video_posted_date);
+GROUP BY
+    video_uid,
+    video_title,
+    channel_userid,
+    channel_name,
+    video_posted_date;
 
 
 -- content popularity analysis
@@ -83,7 +88,7 @@ SELECT
     now() AS gold_ingestion_ts
 FROM silver.events
 WHERE video_visit_count IS NOT NULL
-GROUP BY video_uid, video_title;
+GROUP BY video_uid, video_title, snapshot_date;
 
 
 -- geographic distribution of channels
@@ -95,7 +100,7 @@ SELECT
     channel_country,
     channel_region,
     sumState(channel_followers_count) AS total_followers_count,
-    sumState(channel_total_video_visit) AS total_video_visits,
+    sumState(toUInt64(channel_total_video_visit)) AS total_video_visits,
     countState(channel_userid) AS total_channels_state,
     toDate(silver_ingestion_ts) AS snapshot_date,
 
@@ -103,7 +108,7 @@ SELECT
 
 FROM silver.events
 WHERE channel_country IS NOT NULL
-GROUP BY channel_region, channel_country;
+GROUP BY channel_region, channel_country, snapshot_date;
 
 
 -- channel activity and update trends
