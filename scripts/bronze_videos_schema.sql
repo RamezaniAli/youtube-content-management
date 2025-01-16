@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS bronze.videos
 (
-    id String PRIMARY KEY,
+    id                  String PRIMARY KEY,
     owner_username      String,
     owner_id            String,
     title               String,
