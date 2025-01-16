@@ -139,6 +139,8 @@ services:
     <<: *airflow-common
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}/requirements.txt:/requirements.txt
+    command: >
+      "scheduler"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
       interval: 30s
