@@ -49,8 +49,8 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.4}
-  # build: .
+  # image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.4}
+  build: .
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
@@ -323,16 +323,35 @@ services:
       - 8123:8123
       - 9000:9000
       - 9005:9005
+  
+  metabase: 
+    image: metabase/metabase:v0.52.6 
+    container_name: metabase
+    ports:
+      - 3000:3000
+    command: >
+      sh -c "
+      mkdir -p /plugins &&
+      curl -L https://github.com/ClickHouse/metabase-clickhouse-driver/releases/download/1.51.0/clickhouse.metabase-driver.jar -o /plugins/clickhouse-driver.jar &&
+      exec java -jar /app/metabase.jar
+      "
+    environment:
+      MB_PLUGINS_DIR: /plugins
+      MB_DB_FILE: /metabase-data/metabase.db
+    volumes:
+      - metabase-plugins-volume:/plugins
+      - metabase-data-volume:/metabase-data
+    restart: always
+    depends_on:
+      - postgres
+      - clickhouse
 
 
 volumes:
   postgres-airflow-volume:
-    # external: true
   mongo-volume:
-    # external: true
   postgres-volume:
-    # external: true
   clickhouse-data-volume:
-    # external: true
   clickhouse-log-volume:
-    # external: true
+  metabase-data-volume:
+  metabase-plugins-volume:
