@@ -1,143 +1,317 @@
--- load initial data
 INSERT INTO silver.events
-SELECT
+    SELECT
+    -- Channel Columns
+    lower(c.id)                         AS channel_id,
+    lower(c.username)                   AS channel_username,
+    lower(c.userid)                     AS channel_userid,
+    lower(c.name)                       AS channel_name,
+    c.total_video_visit                 AS channel_total_video_visit,
+    c.video_count                       AS channel_video_count,
+    c.start_date                        AS channel_start_date,
 
-    v.uid AS video_uid,
-    c.userid AS channel_userid,
-    c.username AS channel_username,
-    c.name AS channel_name,
-    c.avatar_thumbnail AS channel_avatar_thumbnail,
-    c.bio_links AS channel_bio_links,
-    c.total_video_visit AS channel_total_video_visit,
-    c.video_count AS channel_video_count,
-    toDateTime64(c.start_date, 3, 'UTC') AS channel_start_date,
-    c.start_date_timestamp AS channel_start_date_ts,
+    -- Handle followers_count NULL values
+    CAST(
+        ifNull(
+            assumeNotNull(c.followers_count),
+            assumeNotNull(
+                avg(assumeNotNull(c.followers_count)) OVER (
+                    PARTITION BY
+                        c.country,
+                        floor(c.video_count/10)*10,
+                        toStartOfDay(c.start_date)
+                )
+            )
+        ),
+        'Float64'
+    )                                   AS channel_followers_count,
 
-    -- Impute channel_followers_count
-    ifNull(c.followers_count, (SELECT avg(followers_count) FROM bronze.channels 
-                                WHERE video_count BETWEEN c.video_count - 10 AND c.video_count + 10 AND total_video_visit
-                                BETWEEN c.total_video_visit - 1000 AND c.total_video_visit + 1000 AND country = c.country))
-                                AS channel_followers_count,
+    lower(c.country)                    AS channel_country,
+    lower(c.platform)                   AS channel_platform,
+    c.update_count                      AS channel_update_count,
+    lower(c._source)                    AS channel_source,
+    c._ingestion_ts                     AS channel_ingestion_ts,
 
-    c.country AS channel_country,
-    c.platform AS channel_platform,
-    c.update_count AS channel_update_count,
-    v.owner_username AS video_owner_username,
-    v.title AS video_title,
-    v.visit_count AS video_visit_count,
-    v.owner_name AS video_owner_name,
-    v.poster AS video_poster,
+    -- Video Columns
+    lower(v.uid)                        AS video_uid,
+    lower(v.owner_username)             AS video_owner_username,
+    lower(v.title)                      AS video_title,
+    v.visit_count                       AS video_visit_count,
 
-    -- Impute video_duration
-    ifNull(v.duration, (SELECT avg(duration) FROM bronze.videos WHERE owner_id = v.owner_id)) AS video_duration,
-    toDateTime64(v.posted_date, 3, 'UTC') AS video_posted_date,
-    v.posted_timestamp AS video_posted_date_ts,
+    -- Handle duration NULL values
+    CAST(
+        ifNull(
+            assumeNotNull(v.duration),
+            assumeNotNull(
+                avg(assumeNotNull(v.duration)) OVER (PARTITION BY v.owner_id)
+            )
+        ),
+        'Float64'
+    )                                   AS video_duration,
 
-    v.description AS video_description,
-    v.is_deleted AS video_is_deleted,
-    toDateTime64(v.created_at, 3, 'UTC') AS video_created_at,
-    toDateTime64(v.created_at, 3, 'UTC') AS video_created_at_ts,
-    toDateTime64(v.expire_at, 3, 'UTC') AS video_expire_at,
-    toDateTime64(v.expire_at, 3, 'UTC') AS video_expire_at_ts,
-    v.update_count AS video_update_count,
-    toDateTime64(v._ingestion_ts, 3, 'UTC') AS video_ingestion_ts,
-    v._source AS video_source,
-    toDateTime64(c._ingestion_ts, 3, 'UTC') AS channel_ingestion_ts,
-    c._source AS channel_source,
-    now() AS silver_ingestion_ts,
-    cityHash64(c.userid, v.uid) AS record_hash,
+    v.posted_date                       AS video_posted_date,
+    v.description                       AS video_description,
+    v.is_deleted                        AS video_is_deleted,
+    v.created_at                        AS video_created_at,
+    v.expire_at                         AS video_expire_at,
+    v.update_count                      AS video_update_count,
+    v._ingestion_ts                     AS video_ingestion_ts,
+    v._source                           AS video_source,
+    v._raw_object                       AS video_raw_object,
 
-    CASE
-        WHEN v.visit_count > 0 THEN (coalesce(v.like_count, 0) + length(coalesce(v.comments, ''))) / v.visit_count
-        ELSE 0
-    END AS engagement_rate,
+    now()                               AS silver_ingestion_ts,
+    cityHash64(lower(c.id), lower(v.uid), v.posted_date) AS deduppHash,
 
-    CASE
-        WHEN v.visit_count > 100000 THEN 'High' -- validate numbers based our data
-        WHEN v.visit_count > 10000 THEN 'Medium' -- validate numbers based our data
-        ELSE 'Low'
-    END AS popularity_category,
+    -- Calculated columns
+    multiIf(
+        v.visit_count > 100000, 'High',
+        v.visit_count > 50000, 'Medium',
+        'Low'
+    )                                   AS popularity_category,
 
-     CASE
-        WHEN c.followers_count > 1000000 THEN 'Tier 1' -- validate numbers based our data
-        WHEN c.followers_count > 100000 THEN 'Tier 2' -- validate numbers based our data
-        ELSE 'Tier 3'
-    END AS channel_tier,
+    -- Use the pre-calculated followers_count for channel_tier
+    multiIf(
+        CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ) > 1000000, 'Tier 1',
+        CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ) > 500000, 'Tier 2',
+        'Tier 3'
+    )                                   AS channel_tier,
 
-    dateDiff('day', toDate(c._ingestion_ts), toDate(now())) AS days_since_update
+    dateDiff('day', toDateTime(c._ingestion_ts), now()) AS days_since_update,
+
+    -- Calculate engagement rate with proper NULL handling
+    if(
+        CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ) > 0,
+        CAST(v.visit_count, 'Float64') / CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ),
+        0
+    )                                   AS video_engagement_rate,
+
+    v.visit_count > 10000               AS is_trending,
+    dateDiff('day', v.posted_date, now()) AS days_since_last_update,
+    dateDiff('day', v.posted_date, now()) AS video_age,
+
+    multiIf(
+        lower(c.country) IN ('us', 'ca', 'mx'), 'North America',
+        lower(c.country) IN ('br', 'ar', 'co'), 'South America',
+        lower(c.country) IN ('de', 'gb', 'fr', 'it', 'es'), 'Europe',
+        lower(c.country) IN ('cn', 'in', 'jp', 'kr', 'id'), 'Asia',
+        lower(c.country) IN ('ng', 'za', 'et', 'eg', 'cd'), 'Africa',
+        lower(c.country) IN ('au', 'pg', 'nz'), 'Oceania',
+        lower(c.country) IN ('ir', 'tr', 'sa', 'ae', 'iq'), 'Middle East',
+        lower(c.country) IN ('gt', 'hn', 'cr'), 'Central America',
+        'Other'
+    )                                   AS channel_region
+
+    FROM bronze.videos AS v
+    INNER JOIN bronze.channels AS c ON v.owner_id = c.userid
+    WHERE modulo(cityHash64(lower(c.id), lower(v.uid)), 10) = 0;
+
+
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS silver.events_mv
+    TO silver.events
+    AS
+    SELECT
+    -- Channel Columns
+    lower(c.id)                         AS channel_id,
+    lower(c.username)                   AS channel_username,
+    lower(c.userid)                     AS channel_userid,
+    lower(c.name)                       AS channel_name,
+    c.total_video_visit                 AS channel_total_video_visit,
+    c.video_count                       AS channel_video_count,
+    c.start_date                        AS channel_start_date,
+
+    -- Handle followers_count NULL values
+    CAST(
+        ifNull(
+            assumeNotNull(c.followers_count),
+            assumeNotNull(
+                avg(assumeNotNull(c.followers_count)) OVER (
+                    PARTITION BY
+                        c.country,
+                        floor(c.video_count/10)*10,
+                        toStartOfDay(c.start_date)
+                )
+            )
+        ),
+        'Float64'
+    )                                   AS channel_followers_count,
+
+    lower(c.country)                    AS channel_country,
+    lower(c.platform)                   AS channel_platform,
+    c.update_count                      AS channel_update_count,
+    lower(c._source)                    AS channel_source,
+    c._ingestion_ts                     AS channel_ingestion_ts,
+
+    -- Video Columns
+    lower(v.uid)                        AS video_uid,
+    lower(v.owner_username)             AS video_owner_username,
+    lower(v.title)                      AS video_title,
+    v.visit_count                       AS video_visit_count,
+
+    -- Handle duration NULL values
+    CAST(
+        ifNull(
+            assumeNotNull(v.duration),
+            assumeNotNull(
+                avg(assumeNotNull(v.duration)) OVER (PARTITION BY v.owner_id)
+            )
+        ),
+        'Float64'
+    )                                   AS video_duration,
+
+    v.posted_date                       AS video_posted_date,
+    v.description                       AS video_description,
+    v.is_deleted                        AS video_is_deleted,
+    v.created_at                        AS video_created_at,
+    v.expire_at                         AS video_expire_at,
+    v.update_count                      AS video_update_count,
+    v._ingestion_ts                     AS video_ingestion_ts,
+    v._source                           AS video_source,
+    v._raw_object                       AS video_raw_object,
+
+    now()                               AS silver_ingestion_ts,
+    cityHash64(lower(c.id), lower(v.uid), v.posted_date) AS deduppHash,
+
+    -- Calculated columns
+    multiIf(
+        v.visit_count > 100000, 'High',
+        v.visit_count > 50000, 'Medium',
+        'Low'
+    )                                   AS popularity_category,
+
+    -- Channel tier calculation
+    multiIf(
+        CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ) > 1000000, 'Tier 1',
+        CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ) > 500000, 'Tier 2',
+        'Tier 3'
+    )                                   AS channel_tier,
+
+
+    -- Engagement rate calculation
+    if(
+        CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ) > 0,
+        CAST(v.visit_count, 'Float64') / CAST(
+            ifNull(
+                assumeNotNull(c.followers_count),
+                assumeNotNull(
+                    avg(assumeNotNull(c.followers_count)) OVER (
+                        PARTITION BY
+                            c.country,
+                            floor(c.video_count/10)*10,
+                            toStartOfDay(c.start_date)
+                    )
+                )
+            ),
+            'Float64'
+        ),
+        0
+    )                                   AS video_engagement_rate,
+
+    v.visit_count > 10000               AS is_trending,
+    dateDiff('day', v.posted_date, now()) AS days_since_last_update,
+    dateDiff('day', v.posted_date, now()) AS video_age,
+
+    multiIf(
+        lower(c.country) IN ('us', 'ca', 'mx'), 'North America',
+        lower(c.country) IN ('br', 'ar', 'co'), 'South America',
+        lower(c.country) IN ('de', 'gb', 'fr', 'it', 'es'), 'Europe',
+        lower(c.country) IN ('cn', 'in', 'jp', 'kr', 'id'), 'Asia',
+        lower(c.country) IN ('ng', 'za', 'et', 'eg', 'cd'), 'Africa',
+        lower(c.country) IN ('au', 'pg', 'nz'), 'Oceania',
+        lower(c.country) IN ('ir', 'tr', 'sa', 'ae', 'iq'), 'Middle East',
+        lower(c.country) IN ('gt', 'hn', 'cr'), 'Central America',
+        'Other'
+    )                                   AS channel_region
 
 FROM bronze.videos AS v
 INNER JOIN bronze.channels AS c ON v.owner_id = c.userid;
-
- -- add new data
-CREATE MATERIALIZED VIEW silver.mv_silver_events TO silver.events AS
-SELECT
-
-    v.uid AS video_uid,
-    c.userid AS channel_userid,
-    c.username AS channel_username,
-    c.name AS channel_name,
-    c.avatar_thumbnail AS channel_avatar_thumbnail,
-    c.bio_links AS channel_bio_links,
-    c.total_video_visit AS channel_total_video_visit,
-    c.video_count AS channel_video_count,
-    toDateTime64(c.start_date, 3, 'UTC') AS channel_start_date,
-    c.start_date_timestamp AS channel_start_date_ts,
-
-    -- Impute channel_followers_count
-    ifNull(c.followers_count, (SELECT avg(followers_count) FROM bronze.channels 
-                                WHERE video_count BETWEEN c.video_count - 10 AND c.video_count + 10 AND total_video_visit
-                                BETWEEN c.total_video_visit - 1000 AND c.total_video_visit + 1000 AND country = c.country))
-                                AS channel_followers_count,
-
-    c.country AS channel_country,
-    c.platform AS channel_platform,
-    c.update_count AS channel_update_count,
-    v.owner_username AS video_owner_username,
-    v.title AS video_title,
-    v.visit_count AS video_visit_count,
-    v.owner_name AS video_owner_name,
-    v.poster AS video_poster,
-
-    -- Impute video_duration
-    ifNull(v.duration, (SELECT avg(duration) FROM bronze.videos WHERE owner_id = v.owner_id)) AS video_duration,
-    toDateTime64(v.posted_date, 3, 'UTC') AS video_posted_date,
-    v.posted_timestamp AS video_posted_date_ts,
-
-    v.description AS video_description,
-    v.is_deleted AS video_is_deleted,
-    toDateTime64(v.created_at, 3, 'UTC') AS video_created_at,
-    toDateTime64(v.created_at, 3, 'UTC') AS video_created_at_ts,
-    toDateTime64(v.expire_at, 3, 'UTC') AS video_expire_at,
-    toDateTime64(v.expire_at, 3, 'UTC') AS video_expire_at_ts,
-    v.update_count AS video_update_count,
-    toDateTime64(v._ingestion_ts, 3, 'UTC') AS video_ingestion_ts,
-    v._source AS video_source,
-    toDateTime64(c._ingestion_ts, 3, 'UTC') AS channel_ingestion_ts,
-    c._source AS channel_source,
-    now() AS silver_ingestion_ts,
-    cityHash64(c.userid, v.uid) AS record_hash,
-
-    CASE
-        WHEN v.visit_count > 0 THEN (coalesce(v.like_count, 0) + length(coalesce(v.comments, ''))) / v.visit_count
-        ELSE 0
-    END AS engagement_rate,
-
-    CASE
-        WHEN v.visit_count > 100000 THEN 'High' -- validate numbers based our data
-        WHEN v.visit_count > 10000 THEN 'Medium' -- validate numbers based our data
-        ELSE 'Low'
-    END AS popularity_category,
-
-     CASE
-        WHEN c.followers_count > 1000000 THEN 'Tier 1' -- validate numbers based our data
-        WHEN c.followers_count > 100000 THEN 'Tier 2' -- validate numbers based our data
-        ELSE 'Tier 3'
-    END AS channel_tier,
-
-    dateDiff('day', toDate(c._ingestion_ts), toDate(now())) AS days_since_update
-
-FROM bronze.videos AS v
-INNER JOIN bronze.channels AS c ON v.owner_id = c.userid;
-
-
