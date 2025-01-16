@@ -10,18 +10,17 @@ SELECT
 
     toDate(silver_ingestion_ts) AS snapshot_date,
     sumState(channel_followers_count) AS followers_count_state,
-    sumState(channel_total_video_visit) AS total_video_visits_state,
+    sumState(toUInt64(channel_total_video_visit)) AS total_video_visits_state,
     sumState(channel_video_count) AS video_count_state,
 
     now() AS gold_ingestion_ts
 FROM silver.events
 WHERE channel_followers_count IS NOT NULL
 GROUP BY
+    channel_country,
     channel_userid,
     channel_name,
-    channel_country,
-    channel_platform,
-    toDate(silver_ingestion_ts);
+    snapshot_date;
 
 
 -- top performing channels
@@ -33,7 +32,6 @@ SELECT
     channel_userid,
     channel_name,
     channel_country,
-    channel_platform,
 
     toDate(silver_ingestion_ts) AS snapshot_date,
     maxState(channel_followers_count) AS highest_followers_count,
@@ -44,11 +42,10 @@ SELECT
 FROM silver.events
 WHERE channel_followers_count IS NOT NULL
 GROUP BY
+    channel_country,
     channel_userid,
     channel_name,
-    channel_country,
-    channel_platform,
-    toDate(silver_ingestion_ts);
+    snapshot_date;
 
 
 -- video engagement metrics
@@ -64,13 +61,12 @@ SELECT
     toDate(video_posted_date) AS video_posted_date,
 
     sumState(video_visit_count) AS visit_count_state,
-    sumState(video_like_count) AS like_count_state,
-    sumState(video_comment_count) AS comment_count_state,
+    avgState(video_engagement_rate) AS avg_engagement_rate_state,
 
     now() AS gold_ingestion_ts
 FROM silver.events
 WHERE video_visit_count IS NOT NULL
-GROUP BY video_uid, video_title, channel_userid, channel_name, toDate(video_posted_date);
+GROUP BY video_uid, toDate(video_posted_date);
 
 
 -- content popularity analysis
@@ -81,12 +77,13 @@ AS
 SELECT
     video_uid,
     video_title,
-    splitByComma(video_tags) AS video_tags,
     sumState(video_visit_count) AS visit_count_state,
+    toDate(silver_ingestion_ts) AS snapshot_date,
+
     now() AS gold_ingestion_ts
 FROM silver.events
 WHERE video_visit_count IS NOT NULL
-GROUP BY video_uid, video_title, splitByComma(video_tags);
+GROUP BY video_uid, video_title;
 
 
 -- geographic distribution of channels
@@ -96,12 +93,17 @@ TO gold.geographic_distribution_of_channels
 AS
 SELECT
     channel_country,
+    channel_region,
     sumState(channel_followers_count) AS total_followers_count,
     sumState(channel_total_video_visit) AS total_video_visits,
+    countState(channel_userid) AS total_channels_state,
+    toDate(silver_ingestion_ts) AS snapshot_date,
+
     now() AS gold_ingestion_ts
+
 FROM silver.events
 WHERE channel_country IS NOT NULL
-GROUP BY channel_country;
+GROUP BY channel_region, channel_country;
 
 
 -- channel activity and update trends
@@ -110,12 +112,19 @@ CREATE MATERIALIZED VIEW gold.mv_channel_activity_and_update_trends
 TO gold.channel_activity_and_update_trends
 AS
 SELECT
+
     channel_userid,
-    sumState(channel_update_count) AS update_count_state,
-    channel_start_date,
-    channel_created_at,
+    any(channel_name) AS channel_name,
+    any(channel_country) AS channel_country,
+    toDate(silver_ingestion_ts) AS snapshot_date,
+
+    sumState(channel_update_count) AS total_update_count_state,
+    avgState(video_age) AS avg_video_age_state,
+    sumState(channel_video_count) AS total_videos_state,
+    sumState(is_trending) AS is_trending,
+    any(channel_start_date) AS channel_start_date,
+
     now() AS gold_ingestion_ts
 FROM silver.events
 WHERE channel_userid IS NOT NULL
-GROUP BY channel_userid, channel_start_date, channel_created_at;
-
+GROUP BY channel_userid, snapshot_date ;
