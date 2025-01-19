@@ -8,18 +8,16 @@ from airflow.hooks.base import BaseHook
 
 # Callbacks
 def count_channels_records(**kwargs):
-    clickhouse_conn_id = kwargs['clickhouse_conn_id']
+    clickhouse_conn_id = 'wh_clickhouse_conn'
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_host = clickhouse_connection.host
-    clickhouse_port = clickhouse_connection.port
+    # clickhouse_port = clickhouse_connection.port
     clickhouse_username = clickhouse_connection.login
     clickhouse_password = clickhouse_connection.password
-    clickhouse_database = 'default'
-    print("Host:", clickhouse_host)
-    print("Port Is:", clickhouse_port)
+    clickhouse_database = 'bronze'
     clickhouse_client = clickhouse_connect.get_client(
         host=clickhouse_host,
-        port=clickhouse_port,
+        port=8123,
         username=clickhouse_username,
         password=clickhouse_password,
         database=clickhouse_database
