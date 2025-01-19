@@ -120,6 +120,7 @@ services:
 
   airflow-webserver:
     <<: *airflow-common
+    env_file: "./.env"
     command: webserver
     ports:
       - "8080:8080"
