@@ -12,19 +12,18 @@ def count_channels_records(**kwargs):
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_host = clickhouse_connection.host
     # clickhouse_port = clickhouse_connection.port
-    clickhouse_username = clickhouse_connection.login
-    clickhouse_password = clickhouse_connection.password
-    clickhouse_database = 'bronze'
+    # clickhouse_username = clickhouse_connection.login
+    # clickhouse_password = clickhouse_connection.password
+    clickhouse_database = 'default'
     clickhouse_client = clickhouse_connect.get_client(
         host=clickhouse_host,
         port=8123,
-        username=clickhouse_username,
-        password=clickhouse_password,
+        username='utube',
+        password='utube',
         database=clickhouse_database
     )
-    result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
-    count = result.result_set[0][0]
-    return count
+    print(clickhouse_client.query("SELECT 1"))
+    return "Done!"
 
 
 def etl_data_from_postgres(**kwargs):
