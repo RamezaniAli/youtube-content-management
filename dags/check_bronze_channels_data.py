@@ -7,28 +7,26 @@ from airflow.hooks.base import BaseHook
 
 
 # Callbacks
-def create_channels_schema(**kwargs):
-    clickhouse_conn_id = kwargs['clickhouse_conn_id']
-    conn = BaseHook.get_connection(clickhouse_conn_id)
-    host = conn.host
-    port = conn.port
-    username = conn.login
-    password = conn.password
-    database = 'bronze'
-    client = clickhouse_connect.get_client(
-        host=host,
-        port=port,
-        username=username,
-        password=password,
-        database=database
-    )
-    # Read SQL query file
-    sql_file_path = '/opt/airflow/scripts/bronze_channels_schema.sql'
-    with open(sql_file_path, 'r') as file:
-        create_channels_table_query = file.read()
-    # Execute the SQL query
-    # client.query(create_channels_table_query)
-    print(create_channels_table_query)
+def count_channels_records(**kwargs):
+    clickhouse_conn_id = 'wh_clickhouse_conn'
+    clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
+    clickhouse_host = clickhouse_connection.host
+    clickhouse_port = clickhouse_connection.port
+    clickhouse_username = clickhouse_connection.login
+    clickhouse_password = clickhouse_connection.password
+    clickhouse_database = 'bronze'
+    # clickhouse_client = clickhouse_connect.get_client(
+    #     host='clickhouse',
+    #     port=8123,
+    #     username='utube',
+    #     password='utube',
+    #     database=clickhouse_database
+    # )
+    # print(clickhouse_client.query("SELECT 1"))
+    return "Done!"
+
+
+def etl_data_from_postgres(**kwargs):
     return 'Done!'
 
 
@@ -40,15 +38,22 @@ with DAG(
     catchup=False
 ) as dag:
 
-    create_channels_schema_task = PythonOperator(
-        task_id='create_channels_schema_task',
-        python_callable=create_channels_schema,
+    count_channels_records_task = PythonOperator(
+        task_id='count_channels_records_task',
+        python_callable=count_channels_records,
         provide_context=True,
-        op_kwargs={'clickhouse_conn_id': 'wh_clickhouse_conn'}
+        op_kwargs={
+            'clickhouse_conn_id': 'wh_clickhouse_conn'
+        }
+    )
+
+    etl_data_from_postgres_task = PythonOperator(
+        task_id='etl_data_from_postgres_task',
+        python_callable=etl_data_from_postgres
     )
 
     dummy_task = DummyOperator(
         task_id='dummy_task'
     )
 
-    create_channels_schema_task >> dummy_task
+    count_channels_records_task >> etl_data_from_postgres_task >> dummy_task
