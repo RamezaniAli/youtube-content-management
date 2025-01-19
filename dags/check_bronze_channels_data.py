@@ -8,15 +8,15 @@ from airflow.hooks.base import BaseHook
 
 # Callbacks
 def count_channels_records(**kwargs):
-    clickhouse_conn_id = 'wh_clickhouse_conn'
-    clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
-    clickhouse_host = clickhouse_connection.host
+    # clickhouse_conn_id = 'wh_clickhouse_conn'
+    # clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
+    # clickhouse_host = clickhouse_connection.host
     # clickhouse_port = clickhouse_connection.port
     # clickhouse_username = clickhouse_connection.login
     # clickhouse_password = clickhouse_connection.password
-    clickhouse_database = 'default'
+    clickhouse_database = 'bronze'
     clickhouse_client = clickhouse_connect.get_client(
-        host=clickhouse_host,
+        host='clickhouse',
         port=8123,
         username='utube',
         password='utube',
