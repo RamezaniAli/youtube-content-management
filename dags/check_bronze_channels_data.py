@@ -1,4 +1,4 @@
-import clickhouse_connect
+# import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
@@ -13,8 +13,8 @@ def count_channels_records(**kwargs):
     clickhouse_host = clickhouse_connection.host
     clickhouse_port = clickhouse_connection.port
     clickhouse_username = clickhouse_connection.login
-    clickhouse_password = clickhouse_connection.password
-    clickhouse_database = 'bronze'
+    # clickhouse_password = clickhouse_connection.password
+    # clickhouse_database = 'bronze'
     # clickhouse_client = clickhouse_connect.get_client(
     #     host='clickhouse',
     #     port=8123,
