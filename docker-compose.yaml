@@ -121,7 +121,6 @@ services:
   airflow-webserver:
     <<: *airflow-common
     command: webserver
-    env_file: "./.env"
     ports:
       - "8080:8080"
     healthcheck:
@@ -200,7 +199,7 @@ services:
     command:
       - -c
       - |
-        /scripts/airflow_init.sh && \
+        /opt/airflow/scripts/airflow_init.sh && \
         if [[ -z "${AIRFLOW_UID}" ]]; then
           echo
           echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
@@ -256,6 +255,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}/scripts/airflow_init.sh:/opt/airflow/scripts/airflow_init.sh
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
   airflow-cli:
@@ -324,7 +324,7 @@ services:
       - 8123:8123
       - 9000:9000
       - 9005:9005
-  
+
   metabase: 
     image: metabase/metabase:v0.52.6 
     container_name: metabase
