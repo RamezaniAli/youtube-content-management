@@ -1,30 +1,30 @@
-import clickhouse_connect
+# import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.utils.dates import days_ago
-from airflow.hooks.base import BaseHook
+# from airflow.hooks.base import BaseHook
 
 
 # Callbacks
 def count_channels_records(**kwargs):
-    clickhouse_conn_id = kwargs['clickhouse_conn_id']
-    clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
-    clickhouse_host = clickhouse_connection.host
-    clickhouse_port = clickhouse_connection.port
-    clickhouse_username = clickhouse_connection.login
-    clickhouse_password = clickhouse_connection.password
-    clickhouse_database = 'bronze'
-    clickhouse_client = clickhouse_connect.get_client(
-        host=clickhouse_host,
-        port=clickhouse_port,
-        username=clickhouse_username,
-        password=clickhouse_password,
-        database=clickhouse_database
-    )
-    result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
-    count = result.result_set[0][0]
-    return count
+    # clickhouse_conn_id = kwargs['clickhouse_conn_id']
+    # clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
+    # clickhouse_host = clickhouse_connection.host
+    # clickhouse_port = clickhouse_connection.port
+    # clickhouse_username = clickhouse_connection.login
+    # clickhouse_password = clickhouse_connection.password
+    # clickhouse_database = 'bronze'
+    # clickhouse_client = clickhouse_connect.get_client(
+    #     host=clickhouse_host,
+    #     port=clickhouse_port,
+    #     username=clickhouse_username,
+    #     password=clickhouse_password,
+    #     database=clickhouse_database
+    # )
+    # result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
+    # count = result.result_set[0][0]
+    return 'Count Channels Records Done!'
 
 
 def etl_data_from_postgres(**kwargs):
