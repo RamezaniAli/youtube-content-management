@@ -8,7 +8,7 @@ from airflow.utils.dates import days_ago
 
 # Callbacks
 def count_channels_records(**kwargs):
-    # clickhouse_conn_id = kwargs['clickhouse_conn_id']
+    clickhouse_conn_id = kwargs['clickhouse_conn_id']
     # clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     # clickhouse_host = clickhouse_connection.host
     # clickhouse_port = clickhouse_connection.port
@@ -24,7 +24,7 @@ def count_channels_records(**kwargs):
     # )
     # result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
     # count = result.result_set[0][0]
-    return 'Count Channels Records Done!'
+    return clickhouse_conn_id
 
 
 def etl_data_from_postgres(**kwargs):
