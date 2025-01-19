@@ -261,18 +261,18 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
-  airflow-cli:
-    <<: *airflow-common
-    profiles:
-      - debug
-    environment:
-      <<: *airflow-common-env
-      CONNECTION_CHECK_MAX_COUNT: "0"
-    # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
-    command:
-      - bash
-      - -c
-      - airflow
+  # airflow-cli:
+  #   <<: *airflow-common
+  #   profiles:
+  #     - debug
+  #   environment:
+  #     <<: *airflow-common-env
+  #     CONNECTION_CHECK_MAX_COUNT: "0"
+  #   # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
+  #   command:
+  #     - bash
+  #     - -c
+  #     - airflow
   
 
   mongodb:
@@ -328,26 +328,25 @@ services:
       - 9000:9000
       - 9005:9005
 
-  metabase: 
-    image: metabase/metabase:v0.52.6 
-    container_name: metabase
-    ports:
-      - 3000:3000
-    command: >
-      sh -c "
-      mkdir -p /plugins &&
-      curl -L https://github.com/ClickHouse/metabase-clickhouse-driver/releases/download/1.51.0/clickhouse.metabase-driver.jar -o /plugins/clickhouse-driver.jar &&
-      exec java -jar /app/metabase.jar
-      "
-    environment:
-      MB_PLUGINS_DIR: /plugins
-      MB_DB_FILE: /metabase-data/metabase.db
-    volumes:
-      - metabase-data-volume:/metabase-data
-    restart: always
-    depends_on:
-      - postgres
-      - clickhouse
+  # metabase: 
+  #   image: metabase/metabase:v0.52.6 
+  #   container_name: metabase
+  #   ports:
+  #     - 3000:3000
+  #   command: >
+  #     sh -c "
+  #     mkdir -p /plugins &&
+  #     curl -L https://github.com/ClickHouse/metabase-clickhouse-driver/releases/download/1.51.0/clickhouse.metabase-driver.jar -o /plugins/clickhouse-driver.jar &&
+  #     exec java -jar /app/metabase.jar
+  #     "
+  #   environment:
+  #     MB_PLUGINS_DIR: /plugins
+  #     MB_DB_FILE: /metabase-data/metabase.db
+  #   volumes:
+  #     - metabase-data-volume:/metabase-data
+  #   restart: always
+  #   depends_on:
+  #     - clickhouse
 
 
 volumes:
@@ -356,4 +355,4 @@ volumes:
   postgres-volume:
   clickhouse-data-volume:
   clickhouse-log-volume:
-  metabase-data-volume:
+  # metabase-data-volume:
