@@ -1,4 +1,4 @@
-# import clickhouse_connect
+import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
@@ -15,16 +15,16 @@ def count_channels_records(**kwargs):
     clickhouse_username = clickhouse_connection.login
     clickhouse_password = clickhouse_connection.password
     clickhouse_database = 'bronze'
-    # clickhouse_client = clickhouse_connect.get_client(
-    #     host=clickhouse_host,
-    #     port=clickhouse_port,
-    #     username=clickhouse_username,
-    #     password=clickhouse_password,
-    #     database=clickhouse_database
-    # )
+    clickhouse_client = clickhouse_connect.get_client(
+        host=clickhouse_host,
+        port=clickhouse_port,
+        username=clickhouse_username,
+        password=clickhouse_password,
+        database=clickhouse_database
+    )
     # result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
     # count = result.result_set[0][0]
-    return clickhouse_password
+    return clickhouse_database
 
 
 def etl_data_from_postgres(**kwargs):
