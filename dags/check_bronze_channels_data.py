@@ -14,7 +14,9 @@ def count_channels_records(**kwargs):
     clickhouse_port = clickhouse_connection.port
     clickhouse_username = clickhouse_connection.login
     clickhouse_password = clickhouse_connection.password
-    clickhouse_database = 'bronze'
+    clickhouse_database = 'default'
+    print("Host:", clickhouse_host)
+    print("Port Is:", clickhouse_port)
     clickhouse_client = clickhouse_connect.get_client(
         host=clickhouse_host,
         port=clickhouse_port,
@@ -22,9 +24,9 @@ def count_channels_records(**kwargs):
         password=clickhouse_password,
         database=clickhouse_database
     )
-    # result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
-    # count = result.result_set[0][0]
-    return clickhouse_database
+    result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
+    count = result.result_set[0][0]
+    return count
 
 
 def etl_data_from_postgres(**kwargs):
@@ -50,12 +52,7 @@ with DAG(
 
     etl_data_from_postgres_task = PythonOperator(
         task_id='etl_data_from_postgres_task',
-        python_callable=etl_data_from_postgres,
-        provide_context=True,
-        op_kwargs={
-            'postgres_conn_id': 'oltp_postgres_conn',
-            'clickhouse_conn_id': 'wh_clickhouse_conn'
-        }
+        python_callable=etl_data_from_postgres
     )
 
     dummy_task = DummyOperator(
