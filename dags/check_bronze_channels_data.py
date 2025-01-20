@@ -83,5 +83,3 @@ with DAG(
     )
 
     count_channels_records_task >> branch_task >> [etl_data_from_postgres_task, skip_etl_task] >> dummy_task
-    etl_data_from_postgres_task >> dummy_task
-    skip_etl_task >> dummy_task
