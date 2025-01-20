@@ -74,10 +74,16 @@ with DAG(
         }
     )
 
+    skip_etl_task = DummyOperator(
+        task_id='skip_etl_task'
+    )
+
     dummy_task = DummyOperator(
         task_id='dummy_task'
     )
 
     count_channels_records_task >> branch_task
-    branch_task >> etl_data_from_postgres_task >> dummy_task
-    branch_task >> dummy_task
+    branch_task >> etl_data_from_postgres_task
+    branch_task >> skip_etl_task
+    etl_data_from_postgres_task >> dummy_task
+    skip_etl_task >> dummy_task
