@@ -2,7 +2,9 @@ import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
+from airflow.operators.python import BranchPythonOperator
 from airflow.utils.dates import days_ago
+from airflow.utils.trigger_rule import TriggerRule
 from airflow.hooks.base import BaseHook
 from airflow.providers.mongo.hooks.mongo import MongoHook
 from datetime import datetime
@@ -32,6 +34,34 @@ def create_videos_schema(**kwargs):
     # Execute the SQL query
     client.query(create_videos_table_query)
     return 'Done!'
+
+
+def count_videos_records(**kwargs):
+    clickhouse_conn_id = kwargs['clickhouse_conn_id']
+    clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
+    clickhouse_host = clickhouse_connection.host
+    clickhouse_port = clickhouse_connection.port
+    clickhouse_username = clickhouse_connection.login
+    clickhouse_password = clickhouse_connection.password
+    clickhouse_database = 'bronze'
+    clickhouse_client = clickhouse_connect.get_client(
+        host=clickhouse_host,
+        port=clickhouse_port,
+        username=clickhouse_username,
+        password=clickhouse_password,
+        database=clickhouse_database
+    )
+    result = clickhouse_client.query('SELECT COUNT(*) FROM videos')
+    count = result.result_set[0][0]
+    return count
+
+
+def branch_based_on_count(**kwargs):
+    count = kwargs['ti'].xcom_pull(task_ids='count_videos_records')
+    if count == 0:
+        return 'etl_data_from_mongo_task'
+    else:
+        return 'final_task'
 
 
 def etl_data_from_mongo(**kwargs):
@@ -128,6 +158,21 @@ with DAG(
         op_kwargs={'clickhouse_conn_id': 'wh_clickhouse_conn'}
     )
 
+    count_videos_records_task = PythonOperator(
+        task_id='count_videos_records_task',
+        python_callable=count_videos_records,
+        provide_context=True,
+        op_kwargs={
+            'clickhouse_conn_id': 'wh_clickhouse_conn'
+        }
+    )
+
+    branch_task = BranchPythonOperator(
+        task_id='branch_task',
+        python_callable=branch_based_on_count,
+        provide_context=True,
+    )
+
     etl_data_from_mongo_task = PythonOperator(
         task_id='etl_data_from_mongo_task',
         python_callable=etl_data_from_mongo,
@@ -139,7 +184,10 @@ with DAG(
     )
 
     final_task = DummyOperator(
-        task_id='final_task'
+        task_id='final_task',
+        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
     )
 
-    create_videos_schema_task >> etl_data_from_mongo_task >> final_task
+    create_videos_schema_task >> count_videos_records_task >> branch_task
+    branch_task >> etl_data_from_mongo_task >> final_task
+    branch_task >> final_task
