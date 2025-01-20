@@ -79,7 +79,6 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}/requirements.txt:/requirements.txt
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -125,7 +124,7 @@ services:
       <<: *airflow-common-env
       AIRFLOW__CORE__BASE_LOG_FOLDER: /opt/airflow/logs
       AIRFLOW__CORE__REMOTE_LOGGING: False
-    command: bash -c "printenv && airflow webserver"
+    command: airflow webserver
     ports:
       - "8080:8080"
     healthcheck:
@@ -143,8 +142,7 @@ services:
   airflow-scheduler:
     <<: *airflow-common
     user: "airflow"
-    command: >
-      bash -c "pip install --no-cache-dir -r /requirements.txt && airflow scheduler"
+    command: airflow scheduler
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
       interval: 30s
