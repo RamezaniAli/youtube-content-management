@@ -82,4 +82,6 @@ with DAG(
         task_id='dummy_task'
     )
 
-    count_channels_records_task >> branch_task >> [etl_data_from_postgres_task, skip_etl_task] >> dummy_task
+    count_channels_records_task >> branch_task
+    branch_task >> [etl_data_from_postgres_task, skip_etl_task]
+    [etl_data_from_postgres_task, skip_etl_task] >> dummy_task
