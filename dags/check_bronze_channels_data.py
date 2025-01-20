@@ -3,8 +3,9 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import BranchPythonOperator
-from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
+from airflow.utils.dates import days_ago
+from airflow.utils.trigger_rule import TriggerRule
 
 
 # Callbacks
@@ -78,10 +79,11 @@ with DAG(
         task_id='skip_etl_task'
     )
 
-    dummy_task = DummyOperator(
-        task_id='dummy_task'
+    final_task = DummyOperator(
+        task_id='final_task',
+        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
     )
 
     count_channels_records_task >> branch_task >> [etl_data_from_postgres_task, skip_etl_task]
-    etl_data_from_postgres_task >> dummy_task
-    skip_etl_task >> dummy_task
+    etl_data_from_postgres_task >> final_task
+    skip_etl_task >> final_task
