@@ -49,7 +49,7 @@ def count_channels_records(**kwargs):
         password=clickhouse_password,
         database=clickhouse_database
     )
-    result = clickhouse_client.query('SELECT COUNT(*) FROM channels_test')
+    result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
     count = result.result_set[0][0]
     return count
 
@@ -63,72 +63,71 @@ def branch_based_on_count(**kwargs):
 
 
 def etl_data_from_postgres(**kwargs):
-    # # Connect to Clickhouse
-    # clickhouse_conn_id = kwargs['clickhouse_conn_id']
-    # clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
-    # clickhouse_host = clickhouse_connection.host
-    # clickhouse_port = clickhouse_connection.port
-    # clickhouse_username = clickhouse_connection.login
-    # clickhouse_password = clickhouse_connection.password
-    # clickhouse_database = 'bronze'
-    # clickhouse_client = clickhouse_connect.get_client(
-    #     host=clickhouse_host,
-    #     port=clickhouse_port,
-    #     username=clickhouse_username,
-    #     password=clickhouse_password,
-    #     database=clickhouse_database
-    # )
-    # clickhouse_channels_column_names = [
-    #     'id', 'username', 'userid', 'avatar_thumbnail', 'is_official',
-    #     'name', 'bio_links', 'total_video_visit', 'video_count', 'start_date',
-    #     'start_date_timestamp', 'followers_count', 'following_count',
-    #     'country', 'platform', 'created_at', 'update_count'
-    # ]
-    # # Connect to PostgreSQL
-    # pg_conn_id = kwargs['postgres_conn_id']
-    # pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
-    # batch_size = 1000
-    # skip = 0
-    # batch_number = 1
-    # while True:
-    #     sql_query = f"SELECT * FROM channels LIMIT {batch_size} OFFSET {skip}"
-    #     records = pg_hook.get_records(sql_query)
-    #     if not records:
-    #         break
-    #     # Prepare data for ClickHouse insertion
-    #     print('='*100)
-    #     print('Batch Number:', batch_number)
-    #     print('='*100)
-    #     data_to_insert = []
-    #     for record in records:
-    #         data_to_insert.append((
-    #             record[0],  # _id
-    #             record[1],  # username
-    #             record[2],  # userid
-    #             record[3],  # avatar_thumbnail
-    #             record[4],  # is_official
-    #             record[5],  # name
-    #             record[6],  # bio_links
-    #             record[7],  # total_video_visit
-    #             record[8],  # video_count
-    #             record[9],  # start_date
-    #             record[10],  # start_date_timestamp
-    #             record[11],  # followers_count
-    #             record[12],  # following_count
-    #             record[13],  # country
-    #             record[14],  # platform
-    #             record[15],  # created_at
-    #             record[16],  # update_count
-    #         ))
-    #     # Execute the insert query
-    #     clickhouse_client.insert(
-    #         'channels',
-    #         data_to_insert,
-    #         column_names=clickhouse_channels_column_names
-    #     )
-    #     skip += batch_size
-    #     batch_number += 1
-    print("ETL is running...")
+    # Connect to Clickhouse
+    clickhouse_conn_id = kwargs['clickhouse_conn_id']
+    clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
+    clickhouse_host = clickhouse_connection.host
+    clickhouse_port = clickhouse_connection.port
+    clickhouse_username = clickhouse_connection.login
+    clickhouse_password = clickhouse_connection.password
+    clickhouse_database = 'bronze'
+    clickhouse_client = clickhouse_connect.get_client(
+        host=clickhouse_host,
+        port=clickhouse_port,
+        username=clickhouse_username,
+        password=clickhouse_password,
+        database=clickhouse_database
+    )
+    clickhouse_channels_column_names = [
+        'id', 'username', 'userid', 'avatar_thumbnail', 'is_official',
+        'name', 'bio_links', 'total_video_visit', 'video_count', 'start_date',
+        'start_date_timestamp', 'followers_count', 'following_count',
+        'country', 'platform', 'created_at', 'update_count'
+    ]
+    # Connect to PostgreSQL
+    pg_conn_id = kwargs['postgres_conn_id']
+    pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
+    batch_size = 1000
+    skip = 0
+    batch_number = 1
+    while True:
+        sql_query = f"SELECT * FROM channels LIMIT {batch_size} OFFSET {skip}"
+        records = pg_hook.get_records(sql_query)
+        if not records:
+            break
+        # Prepare data for ClickHouse insertion
+        print('='*100)
+        print('Batch Number:', batch_number)
+        print('='*100)
+        data_to_insert = []
+        for record in records:
+            data_to_insert.append((
+                record[0],  # _id
+                record[1],  # username
+                record[2],  # userid
+                record[3],  # avatar_thumbnail
+                record[4],  # is_official
+                record[5],  # name
+                record[6],  # bio_links
+                record[7],  # total_video_visit
+                record[8],  # video_count
+                record[9],  # start_date
+                record[10],  # start_date_timestamp
+                record[11],  # followers_count
+                record[12],  # following_count
+                record[13],  # country
+                record[14],  # platform
+                record[15],  # created_at
+                record[16],  # update_count
+            ))
+        # Execute the insert query
+        clickhouse_client.insert(
+            'channels',
+            data_to_insert,
+            column_names=clickhouse_channels_column_names
+        )
+        skip += batch_size
+        batch_number += 1
     return 'Done!'
 
 
