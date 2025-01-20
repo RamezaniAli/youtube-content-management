@@ -138,8 +138,8 @@ with DAG(
         }
     )
 
-    dummy_task = DummyOperator(
-        task_id='dummy_task'
+    final_task = DummyOperator(
+        task_id='final_task'
     )
 
-    create_videos_schema_task >> etl_data_from_mongo_task >> dummy_task
+    create_videos_schema_task >> etl_data_from_mongo_task >> final_task
