@@ -80,4 +80,6 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
     )
 
-    count_channels_records_task >> branch_task >> etl_data_from_postgres_task >> final_task
+    count_channels_records_task >> branch_task
+    branch_task >> etl_data_from_postgres_task >> final_task
+    branch_task >> final_task
