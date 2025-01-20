@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS bronze.channels
+CREATE TABLE IF NOT EXISTS bronze.channels_test
 (
     id                      String PRIMARY KEY,
     username                String,

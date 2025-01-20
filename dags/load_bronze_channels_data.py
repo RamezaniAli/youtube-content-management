@@ -49,7 +49,7 @@ def count_channels_records(**kwargs):
         password=clickhouse_password,
         database=clickhouse_database
     )
-    result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
+    result = clickhouse_client.query('SELECT COUNT(*) FROM channels_test')
     count = result.result_set[0][0]
     return count
 
