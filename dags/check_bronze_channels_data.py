@@ -33,7 +33,7 @@ def branch_based_on_count(**kwargs):
     if count == 0:
         return 'etl_data_from_postgres_task'
     else:
-        return 'dummy_task'
+        return 'skip_etl_task'
 
 
 def etl_data_from_postgres(**kwargs):
