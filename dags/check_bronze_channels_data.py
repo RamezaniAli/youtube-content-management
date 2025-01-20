@@ -75,13 +75,9 @@ with DAG(
         }
     )
 
-    skip_etl_task = DummyOperator(
-        task_id='skip_etl_task'
-    )
-
     final_task = DummyOperator(
         task_id='final_task',
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
     )
 
-    count_channels_records_task >> branch_task >> etl_data_from_postgres >> final_task
+    count_channels_records_task >> branch_task >> etl_data_from_postgres_task >> final_task
