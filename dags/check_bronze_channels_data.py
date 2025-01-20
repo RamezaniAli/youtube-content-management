@@ -1,33 +1,44 @@
-# import clickhouse_connect
+import clickhouse_connect
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
+from airflow.operators.python import BranchPythonOperator
 from airflow.utils.dates import days_ago
 from airflow.hooks.base import BaseHook
 
 
 # Callbacks
 def count_channels_records(**kwargs):
-    clickhouse_conn_id = 'wh_clickhouse_conn'
+    clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_host = clickhouse_connection.host
     clickhouse_port = clickhouse_connection.port
     clickhouse_username = clickhouse_connection.login
-    # clickhouse_password = clickhouse_connection.password
-    # clickhouse_database = 'bronze'
-    # clickhouse_client = clickhouse_connect.get_client(
-    #     host='clickhouse',
-    #     port=8123,
-    #     username='utube',
-    #     password='utube',
-    #     database=clickhouse_database
-    # )
-    # print(clickhouse_client.query("SELECT 1"))
-    return "Done!"
+    clickhouse_password = clickhouse_connection.password
+    clickhouse_database = 'bronze'
+    clickhouse_client = clickhouse_connect.get_client(
+        host=clickhouse_host,
+        port=clickhouse_port,
+        username=clickhouse_username,
+        password=clickhouse_password,
+        database=clickhouse_database
+    )
+    result = clickhouse_client.query('SELECT COUNT(*) FROM channels')
+    count = result.result_set[0][0]
+    return count
+
+
+def branch_based_on_count(**kwargs):
+    count = kwargs['ti'].xcom_pull(task_ids='count_channels_records_task')
+    if count == 0:
+        return 'etl_data_from_postgres_task'
+    else:
+        return 'dummy_task'
 
 
 def etl_data_from_postgres(**kwargs):
-    return 'Done!'
+    print("ETL is running...")
+    return 'ETL completed!'
 
 
 # DAG and its tasks
@@ -47,13 +58,26 @@ with DAG(
         }
     )
 
+    branch_task = BranchPythonOperator(
+        task_id='branch_task',
+        python_callable=branch_based_on_count,
+        provide_context=True,
+    )
+
     etl_data_from_postgres_task = PythonOperator(
         task_id='etl_data_from_postgres_task',
-        python_callable=etl_data_from_postgres
+        python_callable=etl_data_from_postgres,
+        provide_context=True,
+        op_kwargs={
+            'postgres_conn_id': 'oltp_postgres_conn',
+            'clickhouse_conn_id': 'wh_clickhouse_conn'
+        }
     )
 
     dummy_task = DummyOperator(
         task_id='dummy_task'
     )
 
-    count_channels_records_task >> etl_data_from_postgres_task >> dummy_task
+    count_channels_records_task >> branch_task
+    branch_task >> etl_data_from_postgres_task >> dummy_task
+    branch_task >> dummy_task
