@@ -15,7 +15,6 @@ def list_arvan_buckets():
 # DAG and its tasks
 with DAG(
     dag_id='list_arvan_buckets_dag',
-    dag_id='load_bronze_videos_data',
     schedule_interval=None,
     start_date=days_ago(1),
     catchup=False
