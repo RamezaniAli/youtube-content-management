@@ -11,4 +11,6 @@ def block_robots_middleware(app: Flask):
 
 class BlockRobotsPlugin(AirflowPlugin):
     name = "block_robots"
-    on_load = lambda self, app: block_robots_middleware(app)
+
+    def on_load(self, app: Flask):
+        block_robots_middleware(app)
