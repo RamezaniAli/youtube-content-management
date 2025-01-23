@@ -1,5 +1,6 @@
 from flask import request, abort
 from airflow.plugins_manager import AirflowPlugin
+from airflow.www.app import create_app
 
 
 def block_robots_middleware(app):
@@ -12,5 +13,7 @@ def block_robots_middleware(app):
 class BlockRobotsPlugin(AirflowPlugin):
     name = "block_robots"
 
-    def on_load(self, app):
+    def on_load(self):
+        app = create_app()
         block_robots_middleware(app)
+        return app
