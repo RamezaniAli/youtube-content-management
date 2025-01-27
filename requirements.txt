@@ -1,3 +1,7 @@
 DateTime==5.5
 clickhouse-connect==0.8.13
 apache-airflow-providers-mongo==5.0.0
+airflow-providers-clickhouse==0.0.1
+apache-airflow-providers-amazon==9.2.0
+boto3==1.36.6
+pandas==2.2.3
