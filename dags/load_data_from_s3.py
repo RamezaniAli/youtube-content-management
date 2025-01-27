@@ -42,7 +42,7 @@ def load_csv_to_postgres(execution_date, **kwargs):
     postgres_hook = PostgresHook(postgres_conn_id='oltp_postgres_conn')
     conn = postgres_hook.get_sqlalchemy_engine()
     csv_folder_path = '/tmp/channels'
-    table_name = 'channels2'
+    table_name = 'channels'
 
     csv_files = [f for f in os.listdir(csv_folder_path) if f.endswith('.csv')]
     execution_date = str(execution_date.date())
@@ -71,7 +71,7 @@ def load_json_to_mongo(execution_date, **kwargs):
     client = mongo_hook.get_conn()
     db_name = 'utube'
     db = client[db_name]
-    collection_name = 'videos2'
+    collection_name = 'videos'
     collection = db[collection_name]
     json_folder_path = '/tmp/videos'
 
