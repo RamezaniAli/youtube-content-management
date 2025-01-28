@@ -82,7 +82,8 @@ def etl_data_from_postgres(**kwargs):
         'id', 'username', 'userid', 'avatar_thumbnail', 'is_official',
         'name', 'bio_links', 'total_video_visit', 'video_count', 'start_date',
         'start_date_timestamp', 'followers_count', 'following_count',
-        'country', 'platform', 'created_at', 'update_count'
+        'is_deleted', 'country', 'platform', 'created_at', 'updated_at',
+        'update_count'
     ]
     # Connect to PostgreSQL
     pg_conn_id = kwargs['postgres_conn_id']
@@ -102,27 +103,29 @@ def etl_data_from_postgres(**kwargs):
         data_to_insert = []
         for record in records:
             data_to_insert.append((
-                record[0],  # _id
-                record[1],  # username
-                record[2],  # userid
-                record[3],  # avatar_thumbnail
-                record[4],  # is_official
-                record[5],  # name
-                record[6],  # bio_links
-                record[7],  # total_video_visit
-                record[8],  # video_count
-                record[9],  # start_date
+                record[0],   # _id
+                record[1],   # username
+                record[2],   # userid
+                record[3],   # avatar_thumbnail
+                record[4],   # is_official
+                record[5],   # name
+                record[6],   # bio_links
+                record[7],   # total_video_visit
+                record[8],   # video_count
+                record[9],   # start_date
                 record[10],  # start_date_timestamp
                 record[11],  # followers_count
                 record[12],  # following_count
-                record[13],  # country
-                record[14],  # platform
-                record[15],  # created_at
-                record[16],  # update_count
+                0 if record[13] is False else 0,  # is_deleted
+                record[14],  # country
+                record[15],  # platform
+                record[16],  # created_at
+                record[17],  # updated_at
+                record[18],  # update_count
             ))
         # Execute the insert query
         clickhouse_client.insert(
-            'channels',
+            'channels_2',
             data_to_insert,
             column_names=clickhouse_channels_column_names
         )
