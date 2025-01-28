@@ -27,7 +27,10 @@ CREATE TABLE IF NOT EXISTS bronze.videos
 
     _ingestion_ts       DateTime('UTC') DEFAULT now(),
     _source             String DEFAULT 'mongo',
-    _raw_object         String
+    _raw_object         String,
+
+    -- incremental data loading
+    offset                UInt64,
 )
 ENGINE = MergeTree()
 ORDER BY (id);
