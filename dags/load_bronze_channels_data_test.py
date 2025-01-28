@@ -55,26 +55,7 @@ def etl_data_from_postgres(**kwargs):
         data_to_insert = []
         for record in records:
             data_to_insert.append((
-                record[0],   # _id
-                record[1],   # username
-                record[2],   # userid
-                record[3],   # avatar_thumbnail
-                record[4],   # is_official
                 record[5],   # name
-                record[6],   # bio_links
-                record[7],   # total_video_visit
-                record[8],   # video_count
-                record[9],   # start_date
-                record[10],  # start_date_timestamp
-                record[11],  # followers_count
-                record[12],  # following_count
-                1 if record[13] is True else 0,  # is_deleted
-                record[14],  # country
-                record[15],  # platform
-                record[16],  # created_at
-                record[17],  # updated_at
-                record[18],  # update_count
-                record[19],  # offset_val
             ))
         print('='*100)
         print('Batch Number:', batch_number)
