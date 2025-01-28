@@ -19,5 +19,6 @@ CREATE TABLE channels (
     platform VARCHAR(7),
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,
-    update_count INTEGER
+    update_count INTEGER,
+    offset SERIAL UNIQUE
 );
