@@ -1,7 +1,7 @@
 \c utube;
 
 CREATE TABLE channels (
-    id TEXT PRIMARY KEY,
+    id TEXT,
     username TEXT,
     userid TEXT UNIQUE,
     avatar_thumbnail TEXT,
@@ -14,8 +14,10 @@ CREATE TABLE channels (
     start_date_timestamp BIGINT,
     followers_count BIGINT,
     following_count BIGINT,
+    is_deleted BOOLEAN DEFAULT FALSE,
     country VARCHAR(38),
     platform VARCHAR(7),
     created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
     update_count INTEGER
 );
