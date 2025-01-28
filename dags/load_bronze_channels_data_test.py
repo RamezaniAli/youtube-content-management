@@ -142,7 +142,7 @@ def etl_data_from_postgres(**kwargs):
 
 # DAG and its tasks
 with DAG(
-    dag_id='load_bronze_channels_data',
+    dag_id='load_bronze_channels_data_test',
     schedule_interval=None,
     start_date=days_ago(1),
     catchup=False
