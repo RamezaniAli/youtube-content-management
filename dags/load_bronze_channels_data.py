@@ -88,7 +88,7 @@ def etl_data_from_postgres(**kwargs):
     # Connect to PostgreSQL
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
-    batch_size = 1000
+    batch_size = 200
     skip = 0
     batch_number = 1
     while True:
@@ -97,9 +97,6 @@ def etl_data_from_postgres(**kwargs):
         if not records:
             break
         # Prepare data for ClickHouse insertion
-        print('='*100)
-        print('Batch Number:', batch_number)
-        print('='*100)
         data_to_insert = []
         for record in records:
             data_to_insert.append((
@@ -116,7 +113,7 @@ def etl_data_from_postgres(**kwargs):
                 record[10],  # start_date_timestamp
                 record[11],  # followers_count
                 record[12],  # following_count
-                0 if record[13] is False else 0,  # is_deleted
+                1 if record[13] is True else 0,  # is_deleted
                 record[14],  # country
                 record[15],  # platform
                 record[16],  # created_at
@@ -124,6 +121,10 @@ def etl_data_from_postgres(**kwargs):
                 record[18],  # update_count
                 record[19],  # offset_val
             ))
+        print('='*100)
+        print('Batch Number:', batch_number)
+        print(data_to_insert)
+        print('='*100)
         # Execute the insert query
         clickhouse_client.insert(
             'channels',
