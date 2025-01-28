@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS bronze.channels
     -- for new data
     is_deleted             Nullable(UInt8),
     updated_at             Nullable(UInt64),
+
+    -- incremental data loading
+    offset                UInt64,
     
 )
 ENGINE = MergeTree()
