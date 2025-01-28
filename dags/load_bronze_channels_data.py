@@ -88,15 +88,23 @@ def etl_data_from_postgres(**kwargs):
     # Connect to PostgreSQL
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
-    last_processed_timestamp = '1970-01-01 00:00:00'
-    batch_size = 200
+    last_processed_timestamp = 0
+    batch_size = 50000
     batch_number = 1
     while True:
-        sql_query = f"SELECT * FROM channels WHERE start_date_timestamp > '{last_processed_timestamp}' LIMIT {batch_size}"
+        sql_query = f"""
+        SELECT * FROM channels
+        WHERE start_date_timestamp > {last_processed_timestamp} 
+        ORDER BY start_date_timestamp ASC
+        LIMIT {batch_size}
+        """
         records = pg_hook.get_records(sql_query)
         if not records:
             break
         # Prepare data for ClickHouse insertion
+        print('='*100)
+        print('Batch Number:', batch_number)
+        print('='*100)
         data_to_insert = []
         for record in records:
             data_to_insert.append((
@@ -121,10 +129,6 @@ def etl_data_from_postgres(**kwargs):
                 record[18],  # update_count
                 record[19],  # offset_val
             ))
-        print('='*100)
-        print('Batch Number:', batch_number)
-        print(data_to_insert)
-        print('='*100)
         # Execute the insert query
         clickhouse_client.insert(
             'channels',
