@@ -88,11 +88,11 @@ def etl_data_from_postgres(**kwargs):
     # Connect to PostgreSQL
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
+    last_processed_timestamp = '1970-01-01 00:00:00'
     batch_size = 200
-    skip = 0
     batch_number = 1
     while True:
-        sql_query = f"SELECT * FROM channels LIMIT {batch_size} OFFSET {skip}"
+        sql_query = f"SELECT * FROM channels WHERE start_date_timestamp > '{last_processed_timestamp}' LIMIT {batch_size}"
         records = pg_hook.get_records(sql_query)
         if not records:
             break
@@ -131,7 +131,7 @@ def etl_data_from_postgres(**kwargs):
             data_to_insert,
             column_names=clickhouse_channels_column_names
         )
-        skip += batch_size
+        last_processed_timestamp = records[-1][10]
         batch_number += 1
     return 'Done!'
 
