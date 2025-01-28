@@ -83,7 +83,7 @@ def etl_data_from_postgres(**kwargs):
         'name', 'bio_links', 'total_video_visit', 'video_count', 'start_date',
         'start_date_timestamp', 'followers_count', 'following_count',
         'is_deleted', 'country', 'platform', 'created_at', 'updated_at',
-        'update_count'
+        'update_count', 'offset'
     ]
     # Connect to PostgreSQL
     pg_conn_id = kwargs['postgres_conn_id']
@@ -122,10 +122,11 @@ def etl_data_from_postgres(**kwargs):
                 record[16],  # created_at
                 record[17],  # updated_at
                 record[18],  # update_count
+                record[19],  # offset_val
             ))
         # Execute the insert query
         clickhouse_client.insert(
-            'channels_2',
+            'channels',
             data_to_insert,
             column_names=clickhouse_channels_column_names
         )
