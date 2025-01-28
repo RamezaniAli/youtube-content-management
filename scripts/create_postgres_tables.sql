@@ -20,5 +20,5 @@ CREATE TABLE channels (
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,
     update_count INTEGER,
-    offset SERIAL UNIQUE
+    offset_val SERIAL UNIQUE
 );
