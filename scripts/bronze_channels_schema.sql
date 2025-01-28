@@ -20,6 +20,11 @@ CREATE TABLE IF NOT EXISTS bronze.channels
     --these two added:
     _source                 String DEFAULT 'postgres',
     _ingestion_ts           DateTime DEFAULT now(),
+
+    -- for new data
+    is_deleted             Nullable(UInt8),
+    updated_at             Nullable(UInt64),
+    
 )
 ENGINE = MergeTree()
 ORDER BY (id, userid);
