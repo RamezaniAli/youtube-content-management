@@ -36,15 +36,13 @@ def etl_data_from_postgres(**kwargs):
     # Connect to PostgreSQL
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
-    last_processed_timestamp = 0
     batch_size = 10
     batch_number = 1
     skip = 0
     while True:
         sql_query = f"""
         SELECT * FROM channels
-        WHERE start_date_timestamp > {last_processed_timestamp}
-        ORDER BY start_date_timestamp ASC
+        ORDER BY start_date, id
         LIMIT {batch_size}
         OFFSET {skip}
         """
