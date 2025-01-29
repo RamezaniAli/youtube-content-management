@@ -55,7 +55,7 @@ def etl_postgres(**kwargs):
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
     pg_connection = pg_hook.get_connection(pg_conn_id)
-    pg_host = pg_connection.host + ":" + str(pg_connection.port),
+    pg_host = str(pg_connection.host + ":" + str(pg_connection.port)),
     pg_user = pg_connection.login,
     pg_password = pg_connection.password
     clickhouse_client.query(f"INSERT INTO channels_test SELECT * FROM postgresql({pg_host}, 'utube', 'channels', {pg_user}, {pg_password}) WHERE offset > {pg_last_execution}")
