@@ -3,7 +3,7 @@
 CREATE TABLE channels (
     id TEXT,
     username TEXT,
-    userid TEXT UNIQUE,
+    userid TEXT,
     avatar_thumbnail TEXT,
     is_official BOOLEAN,
     name TEXT,
