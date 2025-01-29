@@ -285,9 +285,10 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: utube
       MONGO_INITDB_ROOT_PASSWORD: utube
+      MONGO_INITDB_DATABASE: utube
     volumes:
       - mongo-volume:/data/db
-      - ./scripts/mongo_init.sh:/docker-entrypoint-initdb.d/mongo_init.sh
+      # - ./scripts/mongo_init.sh:/docker-entrypoint-initdb.d/mongo_init.sh
       - ./data/extracted_video_data:/dump
 
     
