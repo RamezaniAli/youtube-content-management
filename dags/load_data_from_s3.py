@@ -1,19 +1,52 @@
 import json
 import os
 import datetime
-import time
 
 import boto3
 import pandas as pd
+import numpy as np
+import pymongo
 from airflow import DAG
+from airflow.hooks.base import BaseHook
+from pymongo import InsertOne
+from psycopg2.extras import execute_values
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.mongo.hooks.mongo import MongoHook
 
+COLUMN_MAPPING = {
+    '_id': 'id',
+    'object_username': 'username',
+    'object_userid': 'userid',
+    'object_avatar_thumbnail': 'avatar_thumbnail',
+    'object_is_official': 'is_official',
+    'object_name': 'name',
+    'object_bio_links': 'bio_links',
+    'object_total_video_visit': 'total_video_visit',
+    'object_video_count': 'video_count',
+    'object_start_date': 'start_date',
+    'object_start_date_timestamp': 'start_date_timestamp',
+    'object_followers_count': 'followers_count',
+    'object_following_count': 'following_count',
+    'object_is_deleted': 'is_deleted',
+    'object_country': 'country',
+    'object_platform': 'platform',
+    'created_at': 'created_at',
+    'updated_at': 'updated_at',
+    'update_count': 'update_count',
+}
 
 def download_data_from_s3(execution_date, **kwargs):
+    conn = BaseHook.get_connection('arvan_s3_conn')
+    access_key = conn.login
+    secret_key = conn.password
+    extra = json.loads(conn.extra or '{}')
+    endpoint_url = extra.get('endpoint_url')
     s3_resource = boto3.resource(
         's3',
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key
     )
 
     bucket_name = 'qbc'
@@ -30,45 +63,116 @@ def download_data_from_s3(execution_date, **kwargs):
 
 
 def load_csv_to_postgres(execution_date, **kwargs):
-    postgres_hook = PostgresHook(postgres_conn_id='oltp_postgres_conn')
-    conn = postgres_hook.get_sqlalchemy_engine()
-    csv_folder_path = '/tmp/channels'
+    pg_hook = PostgresHook(postgres_conn_id='oltp_postgres_conn')
+    conn = pg_hook.get_conn()
+    cursor = conn.cursor()
 
-    csv_files = [f for f in os.listdir(csv_folder_path) if f.endswith('.csv')]
+    cursor.execute("""
+        CREATE TEMP TABLE temp_import AS SELECT * FROM test14 LIMIT 0
+    """)
+    print("Temporary table created successfully")
+
+    csv_dir = '/tmp/channels'
     execution_date = str(execution_date.date())
-    for csv_file in csv_files:
-        if execution_date not in csv_file:
-            print(f"Skipping {csv_file}")
+    processed_files = 0
+    total_rows = 0
+    for file in os.listdir(csv_dir):
+        if not (file.endswith('.csv') and execution_date in file):
+            print(f"Skipping non-relevant file: {file}")
             continue
-        csv_path = os.path.join(csv_folder_path, csv_file)
 
-        df = pd.read_csv(csv_path)
-
-        df.to_sql(
-            table_name,
-            con=conn,
-            if_exists="append",
-            index=False
+        file_path = os.path.join(csv_dir, file)
+        df = pd.read_csv(
+            file_path,
+            dtype={
+                'is_official': 'boolean',
+                'video_count': 'Int64',
+                'followers_count': 'Int64',
+                'following_count': 'Int64',
+                'total_video_visit': 'Int64',
+                'start_date_timestamp': 'Int64'
+            },
+            na_values=['', 'null', 'NaN', 'NA', 'None', 'none'],
+            keep_default_na=False
         )
 
-        print(f"Loaded {csv_file} to {table_name}")
+        df.rename(columns=COLUMN_MAPPING, inplace=True)
+        df = df.replace([np.nan, pd.NA], None)
 
-        time.sleep(1)
+        if 'is_official' in df.columns:
+            df['is_official'] = df['is_official'].where(
+                df['is_official'].notna(),
+                None
+            )
+
+        db_columns = COLUMN_MAPPING.values()
+
+        for col in db_columns:
+            if col not in df.columns:
+                df[col] = None
+
+        df = df[db_columns]
+
+        tuples = [tuple(x if x is not pd.NA else None for x in row) for row in df.to_numpy()]
+
+        if tuples:
+            query = f"""
+                INSERT INTO temp_import ({','.join(db_columns)}) VALUES %s
+            """
+            execute_values(cursor, query, tuples, page_size=1000)
+            total_rows += len(tuples)
+            processed_files += 1
+            conn.commit()
+        else:
+            print(f"No data to insert for {file}")
+
+    if total_rows > 0:
+        print("Starting deduplication process")
+        insert_query = f"""
+            INSERT INTO test14 ({','.join(db_columns)})
+            SELECT {','.join(db_columns)}
+            FROM temp_import
+            WHERE NOT EXISTS (
+                SELECT 1 FROM test14
+                WHERE {' AND '.join([f'test14.{c} = temp_import.{c}' for c in db_columns])}
+            )
+        """
+        cursor.execute(insert_query)
+        conn.commit()
+        inserted_rows = cursor.rowcount
+        print(f"Successfully inserted {inserted_rows} new records")
+    else:
+        print("No data processed from all files")
+
+    cursor.close()
+    conn.close()
+
+
+def get_last_offset(collection):
+    last_doc = collection.find_one(
+        sort=[('offset', pymongo.DESCENDING)],
+        projection={'offset': 1}
+    )
+    return last_doc['offset'] if last_doc else 0
 
 
 def load_json_to_mongo(execution_date, **kwargs):
     mongo_hook = MongoHook(mongo_conn_id='oltp_mongo_conn')
     client = mongo_hook.get_conn()
-    db_name = 'utube'
-    db = client[db_name]
+    db = client['utube']
+    collection_name = 'videos'
     collection = db[collection_name]
     json_folder_path = '/tmp/videos'
 
     if collection_name not in db.list_collection_names():
         db.create_collection(collection_name)
 
+    current_offset = get_last_offset(collection)
+    new_offset = current_offset
+
     files = [f for f in os.listdir(json_folder_path) if f.endswith('.json')]
     execution_date = str(execution_date.date())
+
     for file in files:
         if execution_date not in file:
             print(f"Skipping {file}")
@@ -77,19 +181,30 @@ def load_json_to_mongo(execution_date, **kwargs):
         file_path = os.path.join(json_folder_path, file)
         data = [json.loads(line) for line in open(file_path, 'r')]
         batch_size = 1000
+
         for i in range(0, len(data), batch_size):
             batch = data[i:i + batch_size]
+            operations = []
 
-            existing_ids = [doc['_id'] for doc in batch if collection.find_one({'_id': doc['_id']})]
+            for doc in batch:
+                composite_id = f"{doc['_id']}_{new_offset + 1}"
 
-            batch = [doc for doc in batch if doc['_id'] not in existing_ids]
+                new_offset += 1
 
-            if batch:
-                collection.insert_many(batch, ordered=False)
+                new_doc = {
+                    **doc,
+                    '_id': composite_id,
+                    'offset': new_offset
+                }
 
-            print(f"Loaded batch of size {len(batch)} from {file} to {collection_name}")
+                operations.append(InsertOne(new_doc))
 
-        print(f"Loaded {file} to {collection_name}")
+            if operations:
+                collection.bulk_write(operations, ordered=False)
+
+            print(f"Inserted {len(operations)} new documents from {file}")
+
+        print(f"Processed {file}")
 
 
 with DAG(
@@ -105,6 +220,7 @@ with DAG(
     )
 
     load_csv_to_postgres = PythonOperator(
+        task_id="load_csv_to_postgres",
         python_callable=load_csv_to_postgres,
         provide_context=True
     )
