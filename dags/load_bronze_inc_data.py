@@ -3,8 +3,8 @@ from airflow.hooks.base import BaseHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.mongo.hooks.mongo import MongoHook
 from airflow.models import Variable
-from airflow.operators.python import PythonOperator
-from clickhouse_driver import Client
+from airflow.operators.python import PythonOperator, get_current_context
+import clickhouse_connect
 import pendulum
 import datetime
 import requests
@@ -37,18 +37,21 @@ def get_mg_last_execution():
 def update_mg_last_execution(offset):
     Variable.set("etl_mg_last_execution", offset)
 
+def print_context_info():
+    context = get_current_context()
+
 
 # ETL tasks
 def etl_postgres(**kwargs):
     pg_last_execution = get_pg_last_execution()
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
-    clickhouse_client = Client(host=clickhouse_connection.host,
-                                port=clickhouse_connection.port,
-                                user=clickhouse_connection.login,
-                                password=clickhouse_connection.password,
-                                database='bronze'
-                                )
+    clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
+                                                      port=clickhouse_connection.port,
+                                                      user=clickhouse_connection.login,
+                                                      password=clickhouse_connection.password,
+                                                      database='bronze'
+                                                      )
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
     pg_connection = pg_hook.get_connection(pg_conn_id)
@@ -66,12 +69,12 @@ def etl_mongo(**kwargs):
     mg_last_execution = get_mg_last_execution()
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
-    clickhouse_client = Client(host=clickhouse_connection.host,
-                                port=clickhouse_connection.port,
-                                user=clickhouse_connection.login,
-                                password=clickhouse_connection.password,
-                                database='bronze'
-                                )
+    clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
+                                                      port=clickhouse_connection.port,
+                                                      user=clickhouse_connection.login,
+                                                      password=clickhouse_connection.password,
+                                                      database='bronze'
+                                                      )
     mongo_conn_id = kwargs['mongo_conn_id']
     mongo_hook = MongoHook(conn_id=mongo_conn_id)
     collection = mongo_hook.get_collection("videos")
@@ -157,8 +160,8 @@ def etl_mongo(**kwargs):
 with DAG(
         "load_bronze_inc_data",
         description="Incrementally ETL data from Postgres and MongoDB into ClickHouse",
-        schedule_interval="0 20 * * *",
-        start_date=pendulum.datetime(2025, 1, 7, tz="Asia/Tehran"),
+        schedule_interval="30 23 * * *",
+        start_date=pendulum.datetime(2025, 1, 25, tz="Asia/Tehran"),
         catchup=False,
         on_failure_callback=alert
 ) as dag:
@@ -181,6 +184,11 @@ with DAG(
             'clickhouse_conn_id': 'wh_clickhouse_conn'
         }
     )
+    context_info_task = PythonOperator(
+        task_id="context_info_task",
+        python_callable=print_context_info,
+        provide_context=True,
+    )
 
     # Task dependencies
-    [etl_postgres_task, etl_mongo_task]
+    context_info_task >> [etl_postgres_task, etl_mongo_task]
