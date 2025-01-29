@@ -62,8 +62,13 @@ def load_json_to_mongo(execution_date, **kwargs):
     print(f"Execution Date is: {execution_date}")
     for file in files:
         file_path = os.path.join(json_folder_path, file)
+        with open(file_path, "r", encoding="utf-8") as file:
+            json_data = json.load(file_path)
+        num_rows = len(json_data)
+        print('#' * 50)
         print(file_path)
-    print('#' * 50)
+        print(num_rows)
+        print('#' * 50)
 
     # for file in files:
     #     if execution_date not in file:
