@@ -60,8 +60,9 @@ def etl_postgres(**kwargs):
     pg_password = pg_connection.password
     print("h: ",pg_host)
     clickhouse_client.query(f"""
-    INSERT INTO channels_test SELECT * FROM postgresql('{pg_host}', 'utube', 'channels', '{pg_user}', '{pg_password}')
-     WHERE offset > {pg_last_execution}""")
+                            INSERT INTO channels_test SELECT * FROM postgresql('{pg_host}', 'utube', 'channels', '{pg_user}', '{pg_password}')
+                            WHERE offset > {pg_last_execution}"""
+                            )
 
     # Update the last exec
     pg_latest_execution = clickhouse_client.query("select max(offset) from channels_test")
