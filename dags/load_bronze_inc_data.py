@@ -129,9 +129,10 @@ def etl_mongo(**kwargs):
                                                       )
     mongo_conn_id = kwargs['mongo_conn_id']
     mongo_hook = MongoHook(conn_id=mongo_conn_id)
-    collection = mongo_hook.get_collection("videos")
+    mongo_db = mongo_hook.get_conn()['utube']
+    mongo_videos = mongo_db['videos']
     query = {"offset": {"$gt": mg_last_execution}}
-    documents = list(collection.find(query))
+    documents = list(mongo_videos.find(query))
 
     clickhouse_videos_column_names = [
         'id',
