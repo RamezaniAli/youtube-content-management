@@ -43,7 +43,7 @@ def print_context_info():
 
 # ETL tasks
 def etl_postgres(**kwargs):
-    pg_last_execution = get_pg_last_execution()
+    pg_last_execution = int(get_pg_last_execution())
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
@@ -55,7 +55,7 @@ def etl_postgres(**kwargs):
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
     sql_query = f"""
-                SELECT * FROM channels WHERE offset> {pg_last_execution} 
+                SELECT * FROM channels WHERE offset > {pg_last_execution} 
                 """
     records = pg_hook.get_records(sql_query)
     clickhouse_channels_column_names = [
@@ -118,7 +118,7 @@ def etl_postgres(**kwargs):
 
 
 def etl_mongo(**kwargs):
-    mg_last_execution = get_mg_last_execution()
+    mg_last_execution = int(get_mg_last_execution())
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
