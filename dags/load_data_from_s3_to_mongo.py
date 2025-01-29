@@ -45,14 +45,14 @@ def get_last_offset(collection):
 
 
 def load_json_to_mongo(execution_date, **kwargs):
-    # mongo_hook = MongoHook(mongo_conn_id='oltp_mongo_conn')
-    # client = mongo_hook.get_conn()
-    # db = client['utube']
-    # collection_name = 'videos'
-    # collection = db[collection_name]
+    mongo_hook = MongoHook(mongo_conn_id='oltp_mongo_conn')
+    client = mongo_hook.get_conn()
+    db = client['utube']
+    collection_name = 'videos'
+    collection = db[collection_name]
     json_folder_path = '/tmp/videos'
 
-    # current_offset = get_last_offset(collection)
+    current_offset = get_last_offset(collection)
     # new_offset = current_offset
 
     files = [f for f in os.listdir(json_folder_path) if f.endswith('.json')]
@@ -60,17 +60,20 @@ def load_json_to_mongo(execution_date, **kwargs):
 
     print('#' * 50)
     print(f"Execution Date is: {execution_date}")
+    print(f"Last Offset is: {current_offset}")
     for file in files:
         file_path = os.path.join(json_folder_path, file)
         data = [json.loads(line) for line in open(file_path, 'r')]
-        first_data = data[0]
         print('#' * 50)
         print(file_path)
-        print(first_data)
-        print(first_data['_id'])
         print('#' * 50)
-        # for document in data:
-        #     print(document)
+        for document in data:
+            existing_data = collection.find_one({'_id': document['_id']})
+            if existing_data:
+                print(f"Data with _id {document['_id']} already exists. No new data inserted.")
+            else:
+                pass
+                # collection.insert_one(document)
         # print('#' * 50)
 
     # for file in files:
