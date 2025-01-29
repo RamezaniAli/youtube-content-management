@@ -54,15 +54,63 @@ def etl_postgres(**kwargs):
                                                       )
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
-    pg_connection = pg_hook.get_connection(pg_conn_id)
-    pg_host = str(pg_connection.host + ":" + str(pg_connection.port)),
-    pg_user = pg_connection.login,
-    pg_password = pg_connection.password
-    print("h: ",pg_host)
-    clickhouse_client.query(f"""
-                            INSERT INTO channels_test SELECT * FROM postgresql('{pg_host}', 'utube', 'channels', '{pg_user}', '{pg_password}')
-                            WHERE offset > {pg_last_execution}"""
-                            )
+    sql_query = f"""
+                SELECT * FROM channels WHERE offset> {pg_last_execution} 
+                """
+    records = pg_hook.get_records(sql_query)
+    clickhouse_channels_column_names = [
+        'id',
+        'username',
+        'userid',
+        'avatar_thumbnail',
+        'is_official',
+        'name',
+        'bio_links',
+        'total_video_visit',
+        'video_count',
+        'start_date',
+        'start_date_timestamp',
+        'followers_count',
+        'following_count',
+        'is_deleted',
+        'country',
+        'platform',
+        'created_at',
+        'updated_at',
+        'update_count',
+        'offset'
+    ]
+
+    data_to_insert = []
+    for record in records:
+        data_to_insert.append((
+            record[0],  # _id
+            record[1],  # username
+            record[2],  # userid
+            record[3],  # avatar_thumbnail
+            record[4],  # is_official
+            record[5],  # name
+            record[6],  # bio_links
+            record[7],  # total_video_visit
+            record[8],  # video_count
+            record[9],  # start_date
+            record[10],  # start_date_timestamp
+            record[11],  # followers_count
+            record[12],  # following_count
+            1 if record[13] is True else 0,  # is_deleted
+            record[14],  # country
+            record[15],  # platform
+            record[16],  # created_at
+            record[17],  # updated_at
+            record[18],  # update_count
+            record[19],  # offset_val
+        ))
+    # Execute the insert query
+    clickhouse_client.insert(
+        'channels_test',
+        data_to_insert,
+        column_names=clickhouse_channels_column_names
+    )
 
     # Update the last exec
     pg_latest_execution = clickhouse_client.query("select max(offset) from channels_test")
