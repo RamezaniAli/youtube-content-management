@@ -16,4 +16,14 @@ fi
 
 mongorestore $AUTH_STRING --drop --dir /dump --numInsertionWorkersPerCollection=5
 
+# add offset field - Not tested yet
+# mongo $AUTH_STRING --eval '
+# let counter = 0;
+# db.videos.find().forEach(doc => {
+#   db.videos.updateOne(
+#     { _id: doc._id },
+#     { $set: { offset: counter++ } }
+#   )
+# })
+# '
 echo "Done!"

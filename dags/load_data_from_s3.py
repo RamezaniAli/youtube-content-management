@@ -14,9 +14,6 @@ from airflow.providers.mongo.hooks.mongo import MongoHook
 def download_data_from_s3(execution_date, **kwargs):
     s3_resource = boto3.resource(
         's3',
-        endpoint_url='https://s3.ir-thr-at1.arvanstorage.ir',
-        aws_access_key_id='ab5fc903-7426-4a49-ae3e-024b53c30d27',
-        aws_secret_access_key='f70c316b936ffc50668d21442961339a90b627daa190cff89e6a395b821001f2'
     )
 
     bucket_name = 'qbc'
@@ -36,7 +33,6 @@ def load_csv_to_postgres(execution_date, **kwargs):
     postgres_hook = PostgresHook(postgres_conn_id='oltp_postgres_conn')
     conn = postgres_hook.get_sqlalchemy_engine()
     csv_folder_path = '/tmp/channels'
-    table_name = 'channels2'
 
     csv_files = [f for f in os.listdir(csv_folder_path) if f.endswith('.csv')]
     execution_date = str(execution_date.date())
@@ -65,7 +61,6 @@ def load_json_to_mongo(execution_date, **kwargs):
     client = mongo_hook.get_conn()
     db_name = 'utube'
     db = client[db_name]
-    collection_name = 'videos2'
     collection = db[collection_name]
     json_folder_path = '/tmp/videos'
 
@@ -110,7 +105,6 @@ with DAG(
     )
 
     load_csv_to_postgres = PythonOperator(
-        task_id="transfer_csv_to_postgres",
         python_callable=load_csv_to_postgres,
         provide_context=True
     )
