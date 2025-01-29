@@ -36,12 +36,12 @@ def download_data_from_s3(execution_date, **kwargs):
         print(f"Downloaded {object_name} to {download_path}")
 
 
-def get_last_offset(collection):
+def get_last_mongo_offset(collection):
     last_doc = collection.find_one(
         sort=[('offset', pymongo.DESCENDING)],
         projection={'offset': 1}
     )
-    return last_doc['offset'] if last_doc else 0
+    return last_doc.get('offset', 0) if last_doc else 0
 
 
 def load_json_to_mongo(execution_date, **kwargs):
@@ -52,7 +52,7 @@ def load_json_to_mongo(execution_date, **kwargs):
     collection = db[collection_name]
     json_folder_path = '/tmp/videos'
 
-    current_offset = get_last_offset(collection)
+    current_offset = get_last_mongo_offset(collection)
     # new_offset = current_offset
 
     files = [f for f in os.listdir(json_folder_path) if f.endswith('.json')]
