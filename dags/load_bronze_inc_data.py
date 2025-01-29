@@ -12,7 +12,7 @@ import json
 
 
 # Function to send messages to Telegram
-def send_telegram_message(text,chat_id,proxy,bot_token):
+def send_telegram_message(text,chat_id,bot_token):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {"chat_id": chat_id, "text": text}
     response = requests.post(url, json=payload)
@@ -21,8 +21,7 @@ def send_telegram_message(text,chat_id,proxy,bot_token):
 def alert(context):
     send_telegram_message(
         text=f"""\U0001F534 Dag (( {context['dag'].dag_id} )) is failed.\U0001F534""",
-        chat_id=Variable.get("dag_alerting_chat_id "),
-        proxy=Variable.get("telegram_proxy"),
+        chat_id=Variable.get("dag_alerting_chat_id"),
         bot_token=Variable.get("dag_alerting_telegram_bot_token"))
 
 # Incremental extraction marker management
@@ -167,12 +166,20 @@ with DAG(
         task_id="etl_postgres_task",
         python_callable=etl_postgres,
         provide_context=True,
+        op_kwargs={
+            'postgres_conn_id': 'oltp_postgres_conn',
+            'clickhouse_conn_id': 'wh_clickhouse_conn'
+        }
     )
 
     etl_mongo_task = PythonOperator(
         task_id="etl_mongo_task",
         python_callable=etl_mongo,
         provide_context=True,
+        op_kwargs={
+            'mongo_conn_id': 'oltp_mongo_conn',
+            'clickhouse_conn_id': 'wh_clickhouse_conn'
+        }
     )
 
     # Task dependencies
