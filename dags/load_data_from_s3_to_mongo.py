@@ -68,6 +68,9 @@ def load_json_to_mongo(execution_date, **kwargs):
         print(file_path)
         print(num_rows)
         print('#' * 50)
+        for document in data:
+            print(document)
+        print('#' * 50)
 
     # for file in files:
     #     if execution_date not in file:
