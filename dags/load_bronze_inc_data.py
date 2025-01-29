@@ -31,8 +31,6 @@ def get_pg_last_execution():
 def update_pg_last_execution(**kwargs):
     pg_latest_execution = kwargs['ti'].xcom_pull(task_ids='etl_postgres_task')
     Variable.set("etl_pg_last_execution", pg_latest_execution)
-    kwargs['ti'].xcom_push(key="etl_pg_last_execution", value=pg_latest_execution)  # Push value to XCom
-    print(f"✅ Pushed to XCom: {pg_latest_execution}")
 
 def get_mg_last_execution():
     return Variable.get("etl_mg_last_execution")
@@ -40,8 +38,6 @@ def get_mg_last_execution():
 def update_mg_last_execution(**kwargs):
     mg_latest_execution = kwargs['ti'].xcom_pull(task_ids='etl_mongo_task')
     Variable.set("etl_mg_last_execution", mg_latest_execution)
-    kwargs['ti'].xcom_push(key="etl_mg_last_execution", value=mg_latest_execution)  # Push value to XCom
-    print(f"✅ Pushed to XCom: {mg_latest_execution}")
 
 def print_context_info():
     context = get_current_context()
@@ -118,7 +114,8 @@ def etl_postgres(**kwargs):
         column_names=clickhouse_channels_column_names
     )
     # Update the last exec
-    pg_latest_execution = clickhouse_client.query("select max(offset) from channels_test")
+    pg_latest_execution = clickhouse_client.query('select max(offset) from channels_test')
+    pg_latest_execution = pg_latest_execution.result_set[0][0]
     return pg_latest_execution
 
 
@@ -136,7 +133,7 @@ def etl_mongo(**kwargs):
     mongo_hook = MongoHook(mongo_conn_id)
     mongo_db = mongo_hook.get_conn()['utube']
     mongo_videos = mongo_db['videos']
-    query = {"offset": {"$gt":6328627}}
+    query = {"offset": {"$gt": '6328627'}}
     documents = list(mongo_videos.find(query))
 
     clickhouse_videos_column_names = [
@@ -209,7 +206,8 @@ def etl_mongo(**kwargs):
         column_names=clickhouse_videos_column_names
     )
     # Update the last exec
-    mg_latest_execution=clickhouse_client.query("select max(offset) from videos_test")
+    mg_latest_execution= clickhouse_client.query('select max(offset) from videos_test')
+    mg_latest_execution = mg_latest_execution.result_set[0][0]
     return mg_latest_execution
 
 
