@@ -14,7 +14,7 @@ if [ -n "$MONGO_USERNAME" ] && [ -n "$MONGO_PASSWORD" ]; then
   AUTH_STRING="--username $MONGO_USERNAME --password $MONGO_PASSWORD --authenticationDatabase admin"
 fi
 
-mongorestore $AUTH_STRING --drop --dir /dump --numInsertionWorkersPerCollection=5
+mongorestore $AUTH_STRING --drop --dir /dump/videos.bson --numInsertionWorkersPerCollection=5 --db utube
 
 # add offset field - Not tested yet
 # mongo $AUTH_STRING --eval '
