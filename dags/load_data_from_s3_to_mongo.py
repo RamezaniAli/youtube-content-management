@@ -63,9 +63,11 @@ def load_json_to_mongo(execution_date, **kwargs):
     for file in files:
         file_path = os.path.join(json_folder_path, file)
         data = [json.loads(line) for line in open(file_path, 'r')]
+        first_data = data[0]
         print('#' * 50)
         print(file_path)
-        print(data[0])
+        print(first_data)
+        print(first_data['_id'])
         print('#' * 50)
         # for document in data:
         #     print(document)
