@@ -9,8 +9,6 @@ import pendulum
 import datetime
 import requests
 import json
-from enums import clickhouse_channels_column_names, clickhouse_videos_column_names
-
 
 
 # Function to send messages to Telegram
@@ -80,6 +78,38 @@ def etl_mongo(**kwargs):
     collection = mongo_hook.get_collection("videos")
     query = {"offset": {"$gt": mg_last_execution}}
     documents = list(collection.find(query))
+
+    clickhouse_videos_column_names = [
+        'id',
+        'owner_username',
+        'owner_id',
+        'title',
+        'tags',
+        'uid',
+        'visit_count',
+        'owner_name',
+        'poster',
+        'owner_avatar',
+        'duration',
+        'posted_date',
+        'posted_timestamp',
+        'sdate_rss',
+        'sdate_rss_tp',
+        'comments',
+        'frame',
+        'like_count',
+        'description',
+        'is_deleted',
+        'created_at',
+        'expire_at',
+        'is_produce_to_kafka',
+        'update_count',
+        '_ingestion_ts',
+        '_source',
+        '_raw_object',
+        'offset',
+    ]
+
     data_to_insert = []
     for doc in documents:
         data_to_insert.append((
