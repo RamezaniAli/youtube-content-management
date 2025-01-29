@@ -256,4 +256,5 @@ with DAG(
     )
 
     # Task dependencies
-    context_info_task >> [get_mg_last_execution_task, get_pg_last_execution_task ] >>  [etl_postgres_task, etl_mongo_task]
+    context_info_task >> get_pg_last_execution_task >> etl_postgres_task
+    context_info_task >> get_mg_last_execution_task >> etl_mongo_task
