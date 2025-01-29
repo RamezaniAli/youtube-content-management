@@ -55,7 +55,7 @@ def etl_postgres(**kwargs):
     pg_conn_id = kwargs['postgres_conn_id']
     pg_hook = PostgresHook(postgres_conn_id=pg_conn_id)
     sql_query = f"""
-                SELECT * FROM channels WHERE offset > {pg_last_execution} 
+                SELECT * FROM channels WHERE offset_val > {pg_last_execution} 
                 """
     records = pg_hook.get_records(sql_query)
     clickhouse_channels_column_names = [
