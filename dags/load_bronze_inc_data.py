@@ -31,6 +31,8 @@ def get_pg_last_execution():
 def update_pg_last_execution(**kwargs):
     pg_latest_execution = kwargs['ti'].xcom_pull(task_ids='etl_postgres_task')
     Variable.set("etl_pg_last_execution", pg_latest_execution)
+    kwargs['ti'].xcom_push(key="etl_pg_last_execution", value=pg_latest_execution)  # Push value to XCom
+    print(f"✅ Pushed to XCom: {pg_latest_execution}")
 
 def get_mg_last_execution():
     return Variable.get("etl_mg_last_execution")
@@ -38,6 +40,8 @@ def get_mg_last_execution():
 def update_mg_last_execution(**kwargs):
     mg_latest_execution = kwargs['ti'].xcom_pull(task_ids='etl_mongo_task')
     Variable.set("etl_mg_last_execution", mg_latest_execution)
+    kwargs['ti'].xcom_push(key="etl_mg_last_execution", value=mg_latest_execution)  # Push value to XCom
+    print(f"✅ Pushed to XCom: {mg_latest_execution}")
 
 def print_context_info():
     context = get_current_context()
