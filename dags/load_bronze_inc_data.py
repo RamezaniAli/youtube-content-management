@@ -28,14 +28,16 @@ def alert(context):
 def get_pg_last_execution():
     return Variable.get("etl_pg_last_execution")
 
-def update_pg_last_execution(offset):
-    Variable.set("etl_pg_last_execution", offset)
+def update_pg_last_execution(**kwargs):
+    pg_latest_execution = kwargs['ti'].xcom_pull(task_ids='etl_postgres_task')
+    Variable.set("etl_pg_last_execution", pg_latest_execution)
 
 def get_mg_last_execution():
     return Variable.get("etl_mg_last_execution")
 
-def update_mg_last_execution(offset):
-    Variable.set("etl_mg_last_execution", offset)
+def update_mg_last_execution(**kwargs):
+    mg_latest_execution = kwargs['ti'].xcom_pull(task_ids='etl_mongo_task')
+    Variable.set("etl_mg_last_execution", mg_latest_execution)
 
 def print_context_info():
     context = get_current_context()
@@ -111,10 +113,9 @@ def etl_postgres(**kwargs):
         data_to_insert,
         column_names=clickhouse_channels_column_names
     )
-
     # Update the last exec
     pg_latest_execution = clickhouse_client.query("select max(offset) from channels_test")
-    update_pg_last_execution(pg_latest_execution)
+    return pg_latest_execution
 
 
 def etl_mongo(**kwargs):
@@ -131,7 +132,7 @@ def etl_mongo(**kwargs):
     mongo_hook = MongoHook(conn_id=mongo_conn_id)
     mongo_db = mongo_hook.get_conn()['utube']
     mongo_videos = mongo_db['videos']
-    query = {"offset": {"$gt":{mg_last_execution}}}
+    query = {"offset": {"$gt":6328627}}
     documents = list(mongo_videos.find(query))
 
     clickhouse_videos_column_names = [
@@ -205,8 +206,7 @@ def etl_mongo(**kwargs):
     )
     # Update the last exec
     mg_latest_execution=clickhouse_client.query("select max(offset) from videos_test")
-    update_mg_last_execution(mg_latest_execution)
-
+    return mg_latest_execution
 
 
 # Define DAG
@@ -228,6 +228,20 @@ with DAG(
     get_mg_last_execution_task = PythonOperator(
         task_id="get_mg_last_execution_task",
         python_callable=get_mg_last_execution,
+        provide_context=True,
+    )
+
+
+    update_pg_last_execution_task = PythonOperator(
+        task_id="update_pg_last_execution_task",
+        python_callable=update_pg_last_execution,
+        provide_context=True,
+    )
+
+
+    update_mg_last_execution_task = PythonOperator(
+        task_id="update_mg_last_execution_task",
+        python_callable=update_mg_last_execution,
         provide_context=True,
     )
 
@@ -257,5 +271,5 @@ with DAG(
     )
 
     # Task dependencies
-    context_info_task >> get_pg_last_execution_task >> etl_postgres_task
-    context_info_task >> get_mg_last_execution_task >> etl_mongo_task
+    context_info_task >> get_pg_last_execution_task >> etl_postgres_task >> update_pg_last_execution_task
+    context_info_task >> get_mg_last_execution_task >> etl_mongo_task >> update_mg_last_execution_task
