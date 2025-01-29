@@ -43,7 +43,7 @@ def print_context_info():
 
 # ETL tasks
 def etl_postgres(**kwargs):
-    pg_last_execution = int(get_pg_last_execution())
+    pg_last_execution = kwargs['ti'].xcom_pull(task_ids='get_pg_last_execution_task')
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
@@ -118,7 +118,7 @@ def etl_postgres(**kwargs):
 
 
 def etl_mongo(**kwargs):
-    mg_last_execution = int(get_mg_last_execution())
+    mg_last_execution = kwargs['ti'].xcom_pull(task_ids='get_mg_last_execution_task')
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
@@ -217,6 +217,19 @@ with DAG(
         catchup=False,
         on_failure_callback=alert
 ) as dag:
+
+    get_pg_last_execution_task = PythonOperator(
+        task_id="get_pg_last_execution_task",
+        python_callable=get_pg_last_execution,
+        provide_context=True,
+    )
+
+    get_mg_last_execution_task = PythonOperator(
+        task_id="get_mg_last_execution_task",
+        python_callable=get_mg_last_execution,
+        provide_context=True,
+    )
+
     etl_postgres_task = PythonOperator(
         task_id="etl_postgres_task",
         python_callable=etl_postgres,
@@ -243,4 +256,4 @@ with DAG(
     )
 
     # Task dependencies
-    context_info_task >> [etl_postgres_task, etl_mongo_task]
+    context_info_task >> [get_mg_last_execution_task, get_pg_last_execution_task ] >>  [etl_postgres_task, etl_mongo_task]
