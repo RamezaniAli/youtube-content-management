@@ -9,7 +9,7 @@ import pendulum
 import datetime
 import requests
 import json
-from enums import clickhouse_channels_column_names, clickhouse_videos_column_names, telegram_alerting_info
+from enums import clickhouse_channels_column_names, clickhouse_videos_column_names
 
 
 
@@ -23,19 +23,19 @@ def send_telegram_message(text,chat_id,proxy,bot_token):
 def alert(context):
     send_telegram_message(
         text=f"""\U0001F534 Dag (( {context['dag'].dag_id} )) is failed.\U0001F534""",
-        chat_id=telegram_alerting_info['dag_alerting_chat_id'],
-        proxy=telegram_alerting_info['telegram_proxy'],
-        bot_token=telegram_alerting_info['dag_alerting_telegram_bot_token'])
+        chat_id=Variable.get("dag_alerting_chat_id "),
+        proxy=Variable.get("telegram_proxy"),
+        bot_token=Variable.get("dag_alerting_telegram_bot_token"))
 
 # Incremental extraction marker management
 def get_pg_last_execution():
-    return Variable.get("etl_pg_last_execution ", default_var=2442852)
+    return Variable.get("etl_pg_last_execution")
 
 def update_pg_last_execution(offset):
     Variable.set("etl_pg_last_execution", offset)
 
 def get_mg_last_execution():
-    return Variable.get("etl_mg_last_execution ", default_var=6328627)
+    return Variable.get("etl_mg_last_execution")
 
 def update_mg_last_execution(offset):
     Variable.set("etl_mg_last_execution", offset)
@@ -128,7 +128,7 @@ def etl_mongo(**kwargs):
 with DAG(
         "load_bronze_inc_data",
         description="Incrementally ETL data from Postgres and MongoDB into ClickHouse",
-        schedule_interval="0 9 * * *",
+        schedule_interval="0 20 * * *",
         start_date=pendulum.datetime(2025, 1, 7, tz="Asia/Tehran"),
         catchup=False,
         on_failure_callback=alert

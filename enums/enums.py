@@ -50,10 +50,4 @@ clickhouse_videos_column_names = {
     "_source": "_source",
     "_raw_object": "_raw_object",
     "offset": "offset",
-},
-
-telegram_alerting_info = {
-"dag_alerting_telegram_bot_token": "7513376273:AAGsUYkNj_G-EnkE9fyMdfQB-cz7o_TpN-0",
-"dag_alerting_chat_id": "645115745",
-"telegram_proxy": "",
 }
