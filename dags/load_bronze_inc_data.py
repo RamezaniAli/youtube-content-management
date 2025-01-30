@@ -19,7 +19,7 @@ def send_telegram_message(text,chat_id,bot_token):
     if response.status_code != 200:
         raise Exception(f"Failed to send Telegram message: {response.text}")
 
-def test_telegram_alert(**kwargs):
+def test_telegram_alert(context):
     chat_id = Variable.get("dag_alerting_chat_id")
     bot_token = Variable.get("dag_alerting_telegram_bot_token")
     send_telegram_message("🚀 Incremental ETL alerting from Airflow!", chat_id, bot_token)
@@ -208,7 +208,7 @@ def etl_mongo(**kwargs):
         column_names=clickhouse_videos_column_names
     )
     # Update the last exec
-    mg_latest_execution= clickhouse_client.query('select max(offset) from videos_test')
+    mg_latest_execution = clickhouse_client.query('select max(offset) from videos_test')
     mg_latest_execution = mg_latest_execution.result_set[0][0]
     mg_latest_execution = mg_latest_execution if mg_latest_execution > mg_last_execution else mg_last_execution
     return mg_latest_execution
@@ -227,12 +227,14 @@ with DAG(
         task_id="get_pg_last_execution_task",
         python_callable=get_pg_last_execution,
         provide_context=True,
+        on_failure_callback=test_telegram_alert
     )
 
     get_mg_last_execution_task = PythonOperator(
         task_id="get_mg_last_execution_task",
         python_callable=get_mg_last_execution,
         provide_context=True,
+        on_failure_callback=test_telegram_alert
     )
 
 
@@ -240,6 +242,7 @@ with DAG(
         task_id="update_pg_last_execution_task",
         python_callable=update_pg_last_execution,
         provide_context=True,
+        on_failure_callback=test_telegram_alert
     )
 
 
@@ -247,6 +250,7 @@ with DAG(
         task_id="update_mg_last_execution_task",
         python_callable=update_mg_last_execution,
         provide_context=True,
+        on_failure_callback=test_telegram_alert
     )
 
     etl_postgres_task = PythonOperator(
