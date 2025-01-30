@@ -44,6 +44,7 @@ def update_mg_last_execution(**kwargs):
 # ETL tasks
 def etl_postgres(**kwargs):
     pg_last_execution = kwargs['ti'].xcom_pull(task_ids='get_pg_last_execution_task')
+    pg_last_execution = int(pg_last_execution)
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
@@ -121,6 +122,7 @@ def etl_postgres(**kwargs):
 
 def etl_mongo(**kwargs):
     mg_last_execution = kwargs['ti'].xcom_pull(task_ids='get_mg_last_execution_task')
+    mg_last_execution = int(mg_last_execution)
     clickhouse_conn_id = kwargs['clickhouse_conn_id']
     clickhouse_connection = BaseHook.get_connection(clickhouse_conn_id)
     clickhouse_client = clickhouse_connect.get_client(host=clickhouse_connection.host,
