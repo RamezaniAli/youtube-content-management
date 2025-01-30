@@ -109,12 +109,12 @@ def etl_postgres(**kwargs):
         ))
     # Execute the insert query
     clickhouse_client.insert(
-        'channels_test',
+        'channels_test2',
         data_to_insert,
         column_names=clickhouse_channels_column_names
     )
     # Update the last exec
-    pg_latest_execution = clickhouse_client.query('select max(offset) from channels_test')
+    pg_latest_execution = clickhouse_client.query('select max(offset) from channels_test2')
     pg_latest_execution = pg_latest_execution.result_set[0][0]
     pg_latest_execution = pg_latest_execution if pg_latest_execution > pg_last_execution else pg_last_execution
 
