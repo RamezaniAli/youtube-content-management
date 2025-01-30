@@ -6,7 +6,7 @@ from airflow.models import Variable
 from airflow.operators.python import PythonOperator, get_current_context
 import clickhouse_connect
 import pendulum
-import datetime
+from datetime import datetime
 import requests
 import json
 
@@ -182,9 +182,9 @@ def etl_mongo(**kwargs):
             doc['object']['poster'],
             doc['object'].get('owner_avatar'),
             doc['object']['duration'],
-            doc['object']['posted_date'],
+            datetime.fromisoformat(doc['object']['posted_date']),
             doc['object']['posted_timestamp'],
-            doc['object']['sdate_rss'],
+            datetime.fromisoformat(doc['object']['sdate_rss']),
             doc['object']['sdate_rss_tp'],
             doc['object']['comments'],
             doc['object']['frame'],
