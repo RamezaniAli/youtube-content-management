@@ -114,6 +114,8 @@ def etl_postgres(**kwargs):
     # Update the last exec
     pg_latest_execution = clickhouse_client.query('select max(offset) from channels_test')
     pg_latest_execution = pg_latest_execution.result_set[0][0]
+    pg_latest_execution = pg_latest_execution.result_set[0][0] if pg_latest_execution.result_set[0][0]>pg_last_execution else pg_last_execution
+
     return pg_latest_execution
 
 
@@ -205,7 +207,7 @@ def etl_mongo(**kwargs):
     )
     # Update the last exec
     mg_latest_execution= clickhouse_client.query('select max(offset) from videos_test')
-    mg_latest_execution = mg_latest_execution.result_set[0][0]
+    mg_latest_execution = mg_latest_execution.result_set[0][0] if mg_latest_execution.result_set[0][0]>mg_last_execution else mg_last_execution
     return mg_latest_execution
 
 
