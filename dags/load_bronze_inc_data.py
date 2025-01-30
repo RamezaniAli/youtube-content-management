@@ -13,11 +13,9 @@ import json
 
 # Function to send messages to Telegram
 def send_telegram_message(text,chat_id,bot_token):
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    url = f"https://api.telegram.org/bot7513376273:AAGsUYkNj_G-EnkE9fyMdfQB-cz7o_TpN-0/sendMessage"
     payload = {"chat_id": chat_id, "text": text}
     response = requests.post(url, json=payload)
-    if response.status_code != 200:
-        raise Exception(f"Failed to send message to Telegram: {response.text}")
 def alert(context):
     send_telegram_message(
         text=f"""\U0001F534 Dag (( {context['dag'].dag_id} )) is failed.\U0001F534""",
