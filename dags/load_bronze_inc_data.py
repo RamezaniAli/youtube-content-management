@@ -270,7 +270,7 @@ with DAG(
         task_id="etl_mongo_task",
         python_callable=etl_mongo,
         provide_context=True,
-        retries=0,
+        retries=3,
         op_kwargs={
             'mongo_conn_id': 'oltp_mongo_conn',
             'clickhouse_conn_id': 'wh_clickhouse_conn'
