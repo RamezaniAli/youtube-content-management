@@ -164,8 +164,6 @@ def etl_mongo(**kwargs):
         'expire_at',
         'is_produce_to_kafka',
         'update_count',
-        '_ingestion_ts',
-        '_source',
         '_raw_object',
         'offset',
     ]
@@ -173,7 +171,7 @@ def etl_mongo(**kwargs):
     data_to_insert = []
     for doc in documents:
         data_to_insert.append((
-            doc['_id'],
+            doc['original_id'],
             doc['object']['owner_username'],
             doc['object']['owner_id'],
             doc['object']['title'],
@@ -197,8 +195,6 @@ def etl_mongo(**kwargs):
             doc['expire_at'],
             doc.get('is_produce_to_kafka', False),
             doc.get('update_count', 0),
-            doc['object']['_ingestion_ts'],
-            doc['object']['_source'],
             json.dumps(doc['object']),
             doc['offset'],
         ))
