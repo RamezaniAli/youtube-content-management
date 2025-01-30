@@ -184,9 +184,9 @@ def etl_mongo(**kwargs):
             doc['object']['poster'],
             doc['object'].get('owner_avatar'),
             doc['object']['duration'],
-            datetime.fromisoformat(doc['object']['posted_date']),
+            doc['object']['posted_date'],
             doc['object']['posted_timestamp'],
-            datetime.fromisoformat(doc['object']['sdate_rss']),
+            doc['object']['sdate_rss'],
             doc['object']['sdate_rss_tp'],
             doc['object']['comments'],
             doc['object']['frame'],
@@ -270,7 +270,7 @@ with DAG(
         task_id="etl_mongo_task",
         python_callable=etl_mongo,
         provide_context=True,
-        retries=3,
+        retries=0,
         op_kwargs={
             'mongo_conn_id': 'oltp_mongo_conn',
             'clickhouse_conn_id': 'wh_clickhouse_conn'
