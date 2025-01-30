@@ -70,7 +70,7 @@ def load_csv_to_postgres(execution_date, **kwargs):
     cursor = conn.cursor()
 
     cursor.execute("""
-        CREATE TEMP TABLE temp_import AS SELECT * FROM test14 LIMIT 0
+        CREATE TEMP TABLE temp_import AS SELECT * FROM channels LIMIT 0
     """)
     print("Temporary table created successfully")
 
@@ -131,12 +131,12 @@ def load_csv_to_postgres(execution_date, **kwargs):
     if total_rows > 0:
         print("Starting deduplication process")
         insert_query = f"""
-            INSERT INTO test14 ({','.join(db_columns)})
+            INSERT INTO channels ({','.join(db_columns)})
             SELECT {','.join(db_columns)}
             FROM temp_import
             WHERE NOT EXISTS (
-                SELECT 1 FROM test14
-                WHERE {' AND '.join([f'test14.{c} = temp_import.{c}' for c in db_columns])}
+                SELECT 1 FROM channels
+                WHERE {' AND '.join([f'channels.{c} = temp_import.{c}' for c in db_columns])}
             )
         """
         cursor.execute(insert_query)
@@ -245,10 +245,10 @@ with DAG(
         provide_context=True
     )
 
-    load_json_to_mongo = PythonOperator(
-        task_id='load_json_to_mongo',
-        python_callable=load_json_to_mongo,
-        provide_context=True
-    )
+    # load_json_to_mongo = PythonOperator(
+    #     task_id='load_json_to_mongo',
+    #     python_callable=load_json_to_mongo,
+    #     provide_context=True
+    # )
 
-    download_data_from_s3 >> load_csv_to_postgres >> load_json_to_mongo
+    download_data_from_s3 >> load_csv_to_postgres
