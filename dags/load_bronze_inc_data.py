@@ -127,7 +127,7 @@ def etl_mongo(**kwargs):
         'frame', 'like_count', 'description', 'is_deleted', 'created_at', 'expire_at', 'is_produce_to_kafka',
         'update_count', '_raw_object', 'offset',
     ]
-    batch_size = 1000
+    batch_size = 500
     skip = 0
     while True:
         query = {"offset": {"$gt": mg_last_execution + skip}}
