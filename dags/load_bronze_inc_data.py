@@ -60,27 +60,11 @@ def etl_postgres(**kwargs):
                 SELECT * FROM channels WHERE offset_val > {pg_last_execution} 
                 """
     records = pg_hook.get_records(sql_query)
+
     clickhouse_channels_column_names = [
-        'id',
-        'username',
-        'userid',
-        'avatar_thumbnail',
-        'is_official',
-        'name',
-        'bio_links',
-        'total_video_visit',
-        'video_count',
-        'start_date',
-        'start_date_timestamp',
-        'followers_count',
-        'following_count',
-        'is_deleted',
-        'country',
-        'platform',
-        'created_at',
-        'updated_at',
-        'update_count',
-        'offset'
+        'id', 'username', 'userid', 'avatar_thumbnail', 'is_official', 'name', 'bio_links', 'total_video_visit',
+        'video_count', 'start_date', 'start_date_timestamp', 'followers_count', 'following_count', 'is_deleted',
+        'country', 'platform', 'created_at', 'updated_at', 'update_count', 'offset'
     ]
 
     data_to_insert = []
@@ -136,74 +120,58 @@ def etl_mongo(**kwargs):
     mongo_hook = MongoHook(mongo_conn_id)
     mongo_db = mongo_hook.get_conn()['utube']
     mongo_videos = mongo_db['videos']
-    query = {"offset": {"$gt": mg_last_execution}}
-    documents = list(mongo_videos.find(query))
 
     clickhouse_videos_column_names = [
-        'id',
-        'owner_username',
-        'owner_id',
-        'title',
-        'tags',
-        'uid',
-        'visit_count',
-        'owner_name',
-        'poster',
-        'owner_avatar',
-        'duration',
-        'posted_date',
-        'posted_timestamp',
-        'sdate_rss',
-        'sdate_rss_tp',
-        'comments',
-        'frame',
-        'like_count',
-        'description',
-        'is_deleted',
-        'created_at',
-        'expire_at',
-        'is_produce_to_kafka',
-        'update_count',
-        '_raw_object',
-        'offset',
+        'id', 'owner_username', 'owner_id', 'title', 'tags', 'uid', 'visit_count', 'owner_name', 'poster',
+        'owner_avatar', 'duration', 'posted_date', 'posted_timestamp', 'sdate_rss', 'sdate_rss_tp', 'comments',
+        'frame', 'like_count', 'description', 'is_deleted', 'created_at', 'expire_at', 'is_produce_to_kafka',
+        'update_count', '_raw_object', 'offset',
     ]
+    batch_size = 1000
+    skip = 0
+    while True:
+        query = {"offset": {"$gt": mg_last_execution + skip}}
+        documents = list(mongo_videos.find(query).limit(batch_size))
+        if not documents:
+            break
+        data_to_insert = []
+        for doc in documents:
+            data_to_insert.append((
+                doc['original_id'],
+                doc['object']['owner_username'],
+                doc['object']['owner_id'],
+                doc['object']['title'],
+                doc['object']['tags'],
+                doc['object']['uid'],
+                doc['object']['visit_count'],
+                doc['object']['owner_name'],
+                doc['object']['poster'],
+                doc['object'].get('owner_avatar'),
+                doc['object']['duration'],
+                datetime.fromisoformat(doc['object']['posted_date']),
+                doc['object']['posted_timestamp'],
+                datetime.fromisoformat(doc['object']['sdate_rss']),
+                doc['object']['sdate_rss_tp'],
+                doc['object']['comments'],
+                doc['object']['frame'],
+                doc['object']['like_count'],
+                doc['object']['description'],
+                doc['object']['is_deleted'],
+                doc['created_at'],
+                doc['expire_at'],
+                doc.get('is_produce_to_kafka', False),
+                doc.get('update_count', 0),
+                json.dumps(doc['object']),
+                doc['offset'],
+            ))
+        # Execute the insert query for each set of values
+        clickhouse_client.insert(
+            'videos_test',
+            data_to_insert,
+            column_names=clickhouse_videos_column_names
+        )
+        skip += batch_size
 
-    data_to_insert = []
-    for doc in documents:
-        data_to_insert.append((
-            doc['original_id'],
-            doc['object']['owner_username'],
-            doc['object']['owner_id'],
-            doc['object']['title'],
-            doc['object']['tags'],
-            doc['object']['uid'],
-            doc['object']['visit_count'],
-            doc['object']['owner_name'],
-            doc['object']['poster'],
-            doc['object'].get('owner_avatar'),
-            doc['object']['duration'],
-            datetime.fromisoformat(doc['object']['posted_date']),
-            doc['object']['posted_timestamp'],
-            datetime.fromisoformat(doc['object']['sdate_rss']),
-            doc['object']['sdate_rss_tp'],
-            doc['object']['comments'],
-            doc['object']['frame'],
-            doc['object']['like_count'],
-            doc['object']['description'],
-            doc['object']['is_deleted'],
-            doc['created_at'],
-            doc['expire_at'],
-            doc.get('is_produce_to_kafka', False),
-            doc.get('update_count', 0),
-            json.dumps(doc['object']),
-            doc['offset'],
-        ))
-    # Execute the insert query for each set of values
-    clickhouse_client.insert(
-        'videos_test',
-        data_to_insert,
-        column_names=clickhouse_videos_column_names
-    )
     # Update the last exec
     mg_latest_execution = clickhouse_client.query('select max(offset) from videos_test')
     mg_latest_execution = mg_latest_execution.result_set[0][0]
@@ -215,7 +183,7 @@ def etl_mongo(**kwargs):
 with DAG(
         "load_bronze_inc_data",
         description="Incrementally ETL data from Postgres and MongoDB into ClickHouse",
-        schedule_interval="30 23 * * *",
+        schedule_interval="0 21 * * *",
         start_date=pendulum.datetime(2025, 1, 25, tz="Asia/Tehran"),
         catchup=False,
 ) as dag:
