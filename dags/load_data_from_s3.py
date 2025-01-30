@@ -148,27 +148,15 @@ def load_csv_to_postgres(execution_date, **kwargs):
     conn.close()
 
 
-def get_last_offset(collection):
-    last_doc = collection.find_one(
-        sort=[('offset', pymongo.DESCENDING)],
-        projection={'offset': 1}
-    )
-    return last_doc['offset'] if last_doc else 0
-
-
 def load_json_to_mongo(execution_date, **kwargs):
     mongo_hook = MongoHook(mongo_conn_id='oltp_mongo_conn')
     client = mongo_hook.get_conn()
     db = client['utube']
-    collection_name = 'videos'
-    collection = db[collection_name]
+    collection = db['videos']
     json_folder_path = '/tmp/videos'
 
-    if collection_name not in db.list_collection_names():
-        db.create_collection(collection_name)
-
-    current_offset = get_last_offset(collection)
-    new_offset = current_offset
+    last_doc = collection.find_one(sort=[('offset', -1)])
+    current_offset = last_doc['offset'] if last_doc else 0
 
     files = [f for f in os.listdir(json_folder_path) if f.endswith('.json')]
     execution_date = str(execution_date.date())
@@ -179,32 +167,52 @@ def load_json_to_mongo(execution_date, **kwargs):
             continue
 
         file_path = os.path.join(json_folder_path, file)
-        data = [json.loads(line) for line in open(file_path, 'r')]
-        batch_size = 1000
+        with open(file_path, 'r') as f:
+            data = [json.loads(line) for line in f]
 
-        for i in range(0, len(data), batch_size):
+        batch_size = 5000
+        total_docs = len(data)
+
+        for i in range(0, total_docs, batch_size):
             batch = data[i:i + batch_size]
             operations = []
 
+            batch_original_ids = [doc['_id'].split('_')[0] for doc in batch]
+
+            existing_docs = collection.find(
+                {'original_id': {'$in': batch_original_ids}},
+                {'original_id': 1, 'update_count': 1}
+            )
+
+            existing_map = {
+                doc['original_id']: doc['update_count']
+                for doc in existing_docs
+            }
+
             for doc in batch:
-                composite_id = f"{doc['_id']}_{new_offset + 1}"
+                original_id = doc['_id']
+                new_update_count = doc.get('update_count', 0)
 
-                new_offset += 1
+                if original_id in existing_map:
+                    existing_count = existing_map[original_id]
+                    if new_update_count <= existing_count:
+                        print(f"Skipping duplicate: {original_id}")
+                        continue
 
-                new_doc = {
+                current_offset += 1
+                operations.append(InsertOne({
                     **doc,
-                    '_id': composite_id,
-                    'offset': new_offset
-                }
-
-                operations.append(InsertOne(new_doc))
+                    '_id': f"{original_id}_{current_offset}",
+                    'original_id': original_id,
+                    'offset': current_offset
+                }))
 
             if operations:
                 collection.bulk_write(operations, ordered=False)
 
-            print(f"Inserted {len(operations)} new documents from {file}")
+            print(f"Processed {len(operations)}/{len(batch)} docs - {file}")
 
-        print(f"Processed {file}")
+        print(f"Completed {file} with {total_docs} documents")
 
 
 with DAG(
