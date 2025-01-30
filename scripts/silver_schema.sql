@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS silver.events
     channel_id                      String,
     channel_total_video_visit       Nullable(Int64),
     channel_video_count             Nullable(Int32),
-    channel_start_date              Nullable(DateTime('UTC'),  -- changed in insert time from start_data timestamp
+    channel_start_date              Nullable(DateTime('UTC')),  -- changed in insert time from start_data timestamp
     channel_created_at              Nullable(DateTime('UTC')),
     channel_followers_count         Nullable(Int64),
     channel_country                 Nullable(String),
