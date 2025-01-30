@@ -170,7 +170,7 @@ def load_json_to_mongo(execution_date, **kwargs):
         with open(file_path, 'r') as f:
             data = [json.loads(line) for line in f]
 
-        batch_size = 5000
+        batch_size = 1000
         total_docs = len(data)
 
         for i in range(0, total_docs, batch_size):
