@@ -254,7 +254,6 @@ with DAG(
         task_id="etl_postgres_task",
         python_callable=etl_postgres,
         provide_context=True,
-        retries=0,
         op_kwargs={
             'postgres_conn_id': 'oltp_postgres_conn',
             'clickhouse_conn_id': 'wh_clickhouse_conn'
@@ -266,7 +265,6 @@ with DAG(
         task_id="etl_mongo_task",
         python_callable=etl_mongo,
         provide_context=True,
-        retries=0,
         op_kwargs={
             'mongo_conn_id': 'oltp_mongo_conn',
             'clickhouse_conn_id': 'wh_clickhouse_conn'
