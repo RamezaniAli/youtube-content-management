@@ -1,6 +1,7 @@
 import json
 import os
 import datetime
+import time
 
 import boto3
 import pandas as pd
@@ -13,6 +14,7 @@ from psycopg2.extras import execute_values
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.mongo.hooks.mongo import MongoHook
+from pymongo.errors import AutoReconnect
 
 COLUMN_MAPPING = {
     '_id': 'id',
@@ -208,7 +210,17 @@ def load_json_to_mongo(execution_date, **kwargs):
                 }))
 
             if operations:
-                collection.bulk_write(operations, ordered=False)
+                MAX_RETRIES = 3
+                for attempt in range(MAX_RETRIES):
+                    try:
+                        collection.bulk_write(operations, ordered=False)
+                        break
+                    except AutoReconnect as e:
+                        if attempt < MAX_RETRIES - 1:
+                            print(f"Retrying due to error: {e} (Attempt {attempt + 1}/{MAX_RETRIES})")
+                            time.sleep(5)
+                        else:
+                            raise
 
             print(f"Processed {len(operations)}/{len(batch)} docs - {file}")
 
