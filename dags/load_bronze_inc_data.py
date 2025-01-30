@@ -13,14 +13,19 @@ import json
 
 # Function to send messages to Telegram
 def send_telegram_message(text,chat_id,bot_token):
-    url = f"https://api.telegram.org/bot7513376273:AAGsUYkNj_G-EnkE9fyMdfQB-cz7o_TpN-0/sendMessage"
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {"chat_id": chat_id, "text": text}
     response = requests.post(url, json=payload)
-def alert(context):
-    send_telegram_message(
-        text=f"""\U0001F534 Dag (( {context['dag'].dag_id} )) is failed.\U0001F534""",
-        chat_id=Variable.get("dag_alerting_chat_id"),
-        bot_token=Variable.get("dag_alerting_telegram_bot_token"))
+
+def test_telegram_alert(**kwargs):
+    chat_id = Variable.get("dag_alerting_chat_id")
+    bot_token = Variable.get("dag_alerting_telegram_bot_token")
+    send_telegram_message("🚀 Test message from Airflow!", chat_id, bot_token)
+#def alert(context):
+#    send_telegram_message(
+#        text=f"""\U0001F534 Dag (( {context['dag'].dag_id} )) is failed.\U0001F534""",
+#        chat_id=Variable.get("dag_alerting_chat_id"),
+#        bot_token=Variable.get("dag_alerting_telegram_bot_token"))
 
 # Incremental extraction marker management
 def get_pg_last_execution():
@@ -216,7 +221,7 @@ with DAG(
         schedule_interval="30 23 * * *",
         start_date=pendulum.datetime(2025, 1, 25, tz="Asia/Tehran"),
         catchup=False,
-        on_failure_callback=alert
+        #on_failure_callback=alert
 ) as dag:
 
     get_pg_last_execution_task = PythonOperator(
@@ -269,7 +274,13 @@ with DAG(
         python_callable=print_context_info,
         provide_context=True,
     )
+    telegram_message_task = PythonOperator(
+        task_id="telegram_message_task",
+        python_callable=test_telegram_alert,
+        provide_context=True,
+    )
 
     # Task dependencies
+    telegram_message_task
     context_info_task >> get_pg_last_execution_task >> etl_postgres_task >> update_pg_last_execution_task
     context_info_task >> get_mg_last_execution_task >> etl_mongo_task >> update_mg_last_execution_task
