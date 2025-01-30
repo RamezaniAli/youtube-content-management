@@ -22,7 +22,8 @@ def send_telegram_message(text,chat_id,bot_token):
 def test_telegram_alert(context):
     chat_id = Variable.get("dag_alerting_chat_id")
     bot_token = Variable.get("dag_alerting_telegram_bot_token")
-    send_telegram_message("🚀 Incremental ETL alerting from Airflow!", chat_id, bot_token)
+    text = f"""🚀 Dag (( {context['dag'].dag_id} )) is failed.🚀"""
+    send_telegram_message(text, chat_id, bot_token)
 
 
 # Incremental extraction marker management
