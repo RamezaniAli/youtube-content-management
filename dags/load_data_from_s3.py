@@ -245,10 +245,10 @@ with DAG(
         provide_context=True
     )
 
-    # load_json_to_mongo = PythonOperator(
-    #     task_id='load_json_to_mongo',
-    #     python_callable=load_json_to_mongo,
-    #     provide_context=True
-    # )
+    load_json_to_mongo = PythonOperator(
+        task_id='load_json_to_mongo',
+        python_callable=load_json_to_mongo,
+        provide_context=True
+    )
 
-    download_data_from_s3 >> load_csv_to_postgres
+    download_data_from_s3 >> load_csv_to_postgres >> load_json_to_mongo
