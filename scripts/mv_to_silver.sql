@@ -53,8 +53,8 @@ SELECT
     ) AS channel_followers_count,
 
     lower(c.country)                    AS channel_country,
-    c.update_count                      AS channel_updated_count,
-    c.updated_at                        AS channel_update_at,
+    c.update_count                      AS channel_update_count,
+    c.updated_at                        AS channel_updated_at,
     c._ingestion_ts                     AS channel_ingestion_ts,
 
     -- Video Columns
