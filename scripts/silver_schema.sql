@@ -3,7 +3,7 @@
 CREATE DATABASE IF NOT EXISTS silver;
 
 -- Create the silver_youtube_data table
-CREATE TABLE IF NOT EXISTS silver.events2
+CREATE TABLE IF NOT EXISTS silver.events
 (
 
     channel_id                      String,
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS silver.events2
     channel_start_date              Nullable(DateTime('UTC')),  -- changed in insert time from start_data timestamp
     channel_followers_count         Nullable(Int64),
     channel_country                 Nullable(String),
-    channel_updated_at              Nullable(DateTime('UTC')),
-    channel_update_count            Nullable(Int32),
+    channel_updated_at              Nullable(Date),
+    channel_updated_count           Nullable(Int32),
     channel_ingestion_ts           DateTime DEFAULT now(),
 
     video_uid                  String,
