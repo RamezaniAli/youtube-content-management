@@ -3,30 +3,27 @@
 CREATE DATABASE IF NOT EXISTS silver;
 
 -- Create the silver_youtube_data table
-CREATE TABLE IF NOT EXISTS silver.events
+CREATE TABLE IF NOT EXISTS silver.events2
 (
-    
+
     channel_id                      String,
     channel_total_video_visit       Nullable(Int64),
-    channel_video_count             Nullable(Int32),
+    channel_video_count             Nullable(Int64),
     channel_start_date              Nullable(DateTime('UTC')),  -- changed in insert time from start_data timestamp
-    channel_created_at              Nullable(DateTime('UTC')),
     channel_followers_count         Nullable(Int64),
     channel_country                 Nullable(String),
-    channel_platform                Nullable(String),
     channel_updated_at              Nullable(DateTime('UTC')),
     channel_update_count            Nullable(Int32),
     channel_ingestion_ts           DateTime DEFAULT now(),
 
     video_uid                  String,
     video_owner_username      String,
-    video_visit_count         UInt64,
-    video_duration            UInt64,
+    video_visit_count         Int64,
+    video_duration            Int64,
     video_posted_date         DateTime('UTC'),
-    video_is_deleted          UInt8,
-    video_update_count        UInt32,
+    video_is_deleted          Int8,
+    video_update_count        Int32,
     video_ingestion_ts       DateTime('UTC') DEFAULT now(),
-    video_raw_object         String,
 
     silver_ingestion_ts  DateTime('UTC') DEFAULT now(),
 
@@ -34,10 +31,9 @@ CREATE TABLE IF NOT EXISTS silver.events
     popularity_category       String,
     channel_tier              String,
     video_engagement_rate     Float32,
-    is_trending               UInt8,
+    is_trending               Int8,
     video_age                 Int32,
     channel_age               Int32,
-    channel_last_update_diff    Int32,
     channel_region            LowCardinality(String)
 
 )
