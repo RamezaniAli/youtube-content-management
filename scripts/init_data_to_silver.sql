@@ -53,7 +53,7 @@ SELECT
 
     lower(c.country)                    AS channel_country,
     c.update_count                      AS channel_updated_count,
-    c.updated_at                        AS channel_update_at,
+    toDate(c.updated_at)                AS channel_updated_at,
     c._ingestion_ts                     AS channel_ingestion_ts,
 
     -- Video Columns
@@ -129,6 +129,6 @@ SELECT
 )                                                                                                                       AS channel_region
 
     FROM bronze.videos AS v
-    INNER JOIN bronze.channels AS c ON v.owner_id = c.userid
+    INNER JOIN bronze.channels AS c ON v.owner_id = c.id
     LEFT JOIN channel_averages ca ON lower(ca.country) = lower(c.country)
     WHERE toYear(c.start_date) = '2005'; -- batch loading purpose
