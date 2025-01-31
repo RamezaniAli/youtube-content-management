@@ -1,5 +1,5 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS silver.events_mv2
-to silver.events2
+CREATE MATERIALIZED VIEW IF NOT EXISTS silver.events_mv
+to silver.events
 AS
     WITH channel_averages AS (
     SELECT
@@ -53,8 +53,8 @@ SELECT
     ) AS channel_followers_count,
 
     lower(c.country)                    AS channel_country,
-    c.update_count                      AS channel_update_count,
-    c.updated_at                        AS channel_updated_at,
+    c.update_count                      AS channel_updated_count,
+    toDate(c.updated_at)                AS channel_updated_at,
     c._ingestion_ts                     AS channel_ingestion_ts,
 
     -- Video Columns
@@ -130,5 +130,5 @@ SELECT
 )                                                                                                                       AS channel_region
 
     FROM bronze.videos AS v
-    INNER JOIN bronze.channels AS c ON v.owner_id = c.userid
+    INNER JOIN bronze.channels AS c ON v.owner_id = c.id
     LEFT JOIN channel_averages ca ON lower(ca.country) = lower(c.country);
