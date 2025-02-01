@@ -137,32 +137,32 @@ def etl_mongo(**kwargs):
         data_to_insert = []
         for doc in documents:
             data_to_insert.append((
-                doc['original_id'],
-                doc['object']['owner_username'],
-                doc['object']['owner_id'],
-                doc['object']['title'],
-                doc['object']['tags'],
-                doc['object']['uid'],
-                doc['object']['visit_count'],
-                doc['object']['owner_name'],
-                doc['object']['poster'],
-                doc['object'].get('owner_avatar'),
-                doc['object']['duration'],
-                datetime.fromisoformat(doc['object']['posted_date']),
-                doc['object']['posted_timestamp'],
-                datetime.fromisoformat(doc['object']['sdate_rss']),
-                doc['object']['sdate_rss_tp'],
-                doc['object']['comments'],
-                doc['object']['frame'],
-                doc['object']['like_count'],
-                doc['object']['description'],
-                doc['object']['is_deleted'],
-                datetime.fromisoformat(doc['created_at']),
-                datetime.fromisoformat(doc['expire_at']),
+                doc.get('original_id', ''),  # Ensure key exists
+                doc['object'].get('owner_username', ''),
+                doc['object'].get('owner_id', ''),
+                doc['object'].get('title', ''),
+                doc['object'].get('tags', []),  # Ensure it's a list
+                doc['object'].get('uid', ''),
+                doc['object'].get('visit_count', 0),
+                doc['object'].get('owner_name', ''),
+                doc['object'].get('poster', ''),
+                doc['object'].get('owner_avatar', ''),
+                doc['object'].get('duration', 0),
+                doc['object'].get('posted_date', "1970-01-01T00:00:00"),  # Handle missing/invalid dates
+                doc['object'].get('posted_timestamp', 0),
+                doc['object'].get('sdate_rss', "1970-01-01T00:00:00"),
+                doc['object'].get('sdate_rss_tp', 0),
+                doc['object'].get('comments', 0),
+                doc['object'].get('frame', ''),
+                doc['object'].get('like_count', 0),
+                doc['object'].get('description', ''),
+                doc['object'].get('is_deleted', False),
+                doc.get('created_at', "1970-01-01T00:00:00"),
+                doc.get('expire_at', "1970-01-01T00:00:00"),
                 doc.get('is_produce_to_kafka', False),
                 doc.get('update_count', 0),
-                json.dumps(doc['object']),
-                doc['offset'],
+                json.dumps(doc['object'], ensure_ascii=False),  # Ensure JSON encoding
+                doc.get('offset', 0),
             ))
         # Execute the insert query for each set of values
         clickhouse_client.insert(
